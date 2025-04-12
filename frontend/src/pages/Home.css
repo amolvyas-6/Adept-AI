@@ -1,0 +1,136 @@
+@import url("https://fonts.googleapis.com/css2?family=Epilogue:ital,wght@0,100..900;1,100..900&family=Rubik:ital,wght@0,300..900;1,300..900&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap");
+
+* {
+  box-sizing: border-box;
+}
+
+.container {
+  font-family: "Epilogue", "Rubik";
+  width: 70%;
+  margin: auto;
+  height: 80vh;
+  display: flex;
+  align-items: center;
+  margin-top: 10vh;
+  box-sizing: border-box;
+  min-width: 80vh;
+}
+
+img {
+  height: 100%;
+  width: 100%;
+  margin-left: 4rem;
+}
+
+.content {
+  width: 100%;
+}
+
+.title {
+  font-weight: 700;
+  font-size: 6rem;
+  line-height: 1em;
+  margin-bottom: 2rem;
+  color: hsl(0, 0%, 8%);
+}
+
+.sub-title {
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: hsl(0, 0%, 41%);
+  margin-bottom: 2.5rem;
+}
+
+#get-started-btn {
+  background-color: hsl(0, 0%, 8%);
+  color: white;
+  font-weight: 700;
+  padding: 1em;
+  border-radius: 0.5em;
+  border-color: hsl(0, 0%, 8%);
+  text-align: center;
+  position: center;
+}
+
+#about-us-btn {
+  background-color: white;
+  border: 3px black solid;
+  font-weight: 700;
+  margin-left: 2rem;
+  padding: 1em;
+  border-radius: 0.5em;
+  height: 3.8rem;
+  text-align: center;
+}
+
+#about-us-btn:hover {
+  background-color: hsl(0, 0%, 8%);
+  color: white;
+  font-weight: 700;
+  padding: 0 1em;
+  border-radius: 0.5em;
+  border-color: hsl(0, 0%, 8%);
+  text-align: center;
+}
+
+#get-started-btn:hover {
+  background-color: white;
+  border: 3px black solid;
+  font-weight: 700;
+  padding: 1em;
+  border-radius: 0.5em;
+  text-align: center;
+  color: black;
+}
+
+.about-us {
+  font-family: "Epilogue", "Rubik";
+  width: 80%;
+  margin: auto;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  flex-direction: row;
+  justify-content: space-between;
+  margin-top: 10rem;
+  margin-bottom: 10%;
+}
+
+.card {
+  border: 1px black solid;
+  border-radius: 1em;
+  width: 100%;
+  margin: 2rem;
+  min-height: 25rem;
+  padding: 2em;
+  text-align: center;
+  box-shadow: 15px 15px black;
+  transition: transform 0.2s ease-in-out;
+}
+
+.card:hover {
+  transform: scale(1.05); /* slightly zoom in */
+}
+
+.card img {
+  border-radius: 50%;
+  width: 10rem;
+  height: 100%;
+  margin: auto;
+  height: 10rem;
+  margin-bottom: 2rem;
+}
+
+h3 {
+  font-weight: 700;
+  font-size: 1.5rem;
+}
+
+.card > p {
+  font-weight: 500;
+}
+
+.card-content {
+  margin-top: 1rem;
+  color: hsl(0, 0%, 41%);
+}

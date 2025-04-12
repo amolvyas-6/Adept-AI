@@ -1,0 +1,138 @@
+@import './colors.css';
+
+/* Sidebar Container */
+.sidebar {
+  transition: all 0.5s ease; /* Smooth transition for collapsing/expanding */
+  display: flex;
+  flex-direction: column; /* Align items vertically */
+  align-items: center; /* Center-align items */
+  background-color: var(--accent1);
+  color: var(--black);
+  width: 200px;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 5000;
+  padding: 1em 0; /* Vertical padding only */
+}
+
+/* Sidebar Collapsed State */
+.sidebar.collapsed {
+  width: 60px; /* Reduced width */
+}
+
+/* Toggle Button */
+.toggle-button {
+  border: none;
+  background-color: inherit;
+  color: var(--accent2);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 10px;
+  margin-bottom: 1em;
+  align-self: normal; /* Align toggle button to the right */
+  transition: transform 0.3s ease;
+}
+
+.toggle-button:hover {
+  background-color: var(--accent2);
+  color: var(--accent2dark);
+}
+
+/* Sidebar Logo */
+.logo {
+  display: flex;
+  align-items: center; /* Vertically center logo items */
+  justify-content: center; /* Center horizontally */
+  flex-direction: column; /* Stack logo image and text */
+  margin-bottom: 2em;
+  text-align: center;
+  height: 5vw;
+  width: 5vw;
+}
+
+.logo-image {
+  width: 40px; /* Adjust logo size */
+  height: 40px;
+  margin-bottom: 10px; /* Space between image and text */
+}
+
+.logo-text {
+  font-size: 1rem;
+  color: var(--white);
+}
+/* Optional hover effect for the logo link */
+.logo:hover {
+  cursor: pointer;
+  opacity: 0.8;
+  transition: opacity 0.3s ease;
+}
+
+
+/* Hide logo text when collapsed */
+.sidebar.collapsed .logo-text {
+  display: none;
+}
+
+/* Sidebar Menu Items */
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  width: 100%; /* Ensure items stretch across the sidebar width */
+}
+
+.sidebar ul li {
+  margin: 1em 0; /* Add vertical spacing */
+}
+
+.sidebar ul li a {
+  display: flex;
+  align-items: center; /* Center-align icons and text */
+  justify-content: flex-start; /* Align to the left in expanded mode */
+  padding: 10px 15px;
+  color: var(--black);
+  text-decoration: none;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.sidebar ul li a span {
+  margin-right: 10px; /* Space between icon and text */
+}
+
+/* Collapsed Menu Items */
+.sidebar.collapsed ul li a {
+  justify-content: center; /* Center-align when collapsed */
+  padding: 10px 0; /* Remove left-right padding */
+}
+
+.sidebar.collapsed ul li a span {
+  margin: 0; /* Remove spacing for icons */
+}
+
+.sidebar ul li a:hover {
+  background-color: var(--accent2);
+  text-decoration: underline;
+}
+
+/* Add responsiveness for smaller screens */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 60px; /* Automatically collapse on smaller screens */
+  }
+
+  .sidebar ul li a {
+    justify-content: center; /* Center-align items for smaller screens */
+    padding: 10px 0;
+  }
+
+  .sidebar ul li a span {
+    margin: 0;
+  }
+
+  .logo-text {
+    display: none; /* Hide logo text on smaller screens */
+  }
+}

@@ -1,0 +1,87 @@
+[
+  [
+    [
+      "Types and Effects of Biohazards",
+      "This section classifies biohazards into infectious agents (bacteria, viruses, fungi, parasites), biological toxins (e.g., botulinum toxin, ricin), and allergens, detailing their potential consequences, ranging from mild allergic reactions to severe diseases and death, including examples of each category.  It also describes the symptoms of anaphylaxis, a severe allergic reaction.",
+      []
+    ],
+    [
+      "Biohazards and Biosafety Levels",
+      "This section lists various biohazards including allergens (pollen, mold), GMOs, waste products (medical and agricultural), vectors (mosquitoes, ticks), bodily fluids, and products of recombinant DNA technology.  It then introduces Biosafety Levels (BSLs), outlining the concept and describing BSL-1 as an example.",
+      []
+    ],
+    [
+      "Biosafety Levels and Practices",
+      "This content details biosafety levels (BSL-2, BSL-3, and BSL-4), describing the risk levels associated with each, examples of agents handled at each level, and the required containment practices (including the use of biological safety cabinets).",
+      []
+    ],
+    [
+      "BSC Types and Applications",
+      "This section introduces Biological Safety Cabinets (BSCs), emphasizing their role in protecting personnel, products, and the environment from biohazards.  It details the three main classes (I, II, III) and a Class IV environment, highlighting their differing containment levels and applications.  The text also notes that BSCs are used for specific risk groups and processes to minimize aerosol formation, and that they often incorporate HEPA filters for air decontamination.  A brief description of Class I BSCs is included, outlining their purpose and design features.",
+      []
+    ],
+    [
+      "Biosafety Cabinet Types & Uses",
+      "This section describes different classes of biosafety cabinets (BSCs), including Class I and Class II (types A1, A2, B1, B2).  It details their design features, airflow patterns (including HEPA filtration and exhaust/recirculation), minimum inflow speeds, and appropriate applications based on biosafety levels (BSL-1, BSL-2, BSL-3), highlighting the use of each type for handling various risk agents.",
+      []
+    ]
+  ],
+  [
+    [
+      "Cartagena Protocol & GMOs",
+      "This section details the Cartagena Protocol on Biosafety, an international treaty regulating the safe handling and transport of Living Modified Organisms (LMOs),  including its objectives, AIA procedure, and Biosafety Clearing-House.  It also describes GMOs (Genetically Modified Organisms), their types (first and second generation), and applications across agriculture, food production, environmental protection, pharmaceuticals, and forestry.  Specific examples of GMOs are provided.",
+      []
+    ],
+    [
+      "Indian GMO Regulatory Bodies",
+      "This section describes the roles and functions of three key Indian regulatory bodies overseeing GMO research and commercialization: RCGM (research approvals), GEAC (commercial approvals), and IBSC (institutional biosafety).  It details their functions, including risk assessment, guideline development, monitoring, public awareness, and ensuring compliance with national and international biosafety regulations.",
+      []
+    ]
+  ],
+  [
+    [
+      "FSSAI Food Safety Regulations",
+      "This document details the roles and functions of the Food Safety and Standards Authority of India (FSSAI), including regulatory oversight, hazard testing, quality control, adulteration checks, and consumer protection.  It outlines different FSSAI licenses (basic, state, central), compliance rules (food testing, labeling, packaging, record-keeping, lab standards), and the overall importance of FSSAI in ensuring food safety and protecting consumers.",
+      []
+    ],
+    [
+      "Food Safety and Quality Control",
+      "This section details the role of FSSAI in ensuring food quality and safety, including preventing adulteration and fraud, promoting transparency in labeling, and regulating food businesses.  It also explains the HACCP system's seven principles for hazard analysis and control, and the importance of food analysis and testing in laboratories to verify nutritional content and safety.",
+      []
+    ],
+    [
+      "Food Product Quality Control",
+      "This section details various tests conducted to ensure food product quality and safety, including allergen detection (ELISA, PCR), sensory evaluation (descriptive and consumer testing), shelf-life determination (accelerated testing, microbial and chemical analysis), and quality assurance/regulatory compliance (standardized protocols and batch testing).",
+      []
+    ]
+  ],
+  [
+    [
+      "Food Processing Techniques",
+      "This section categorizes food processing methods into physical and chemical techniques.  Physical methods include thermal processing (pasteurization, sterilization, blanching), freezing/chilling, dehydration/drying, irradiation, mechanical processing (milling, emulsification), and fermentation.  Additional physical methods described are milling/grinding, extrusion, homogenization, filtration/centrifugation, and microwave processing. Chemical methods involve adding or modifying food chemicals for preservation or enhancement.",
+      []
+    ],
+    [
+      "Food Safety and Quality Practices",
+      "This section details Good Manufacturing Practices (GMP), Good Laboratory Practices (GLP), Good Agricultural Practices (GAP), Good Hygiene Practices (GHP), and Best Aquaculture Practices (BAP).  It outlines the principles and key focus areas of each, emphasizing their roles in ensuring food safety and quality throughout the production and testing processes.",
+      []
+    ]
+  ],
+  [
+    [
+      "Food Additive Types and Uses",
+      "This section classifies and describes various food additives, including preservatives, antioxidants, colorants, flavor enhancers, sweeteners, emulsifiers, thickening agents, stabilizers, leavening agents, acidulants, and anti-caking agents, detailing their functions and examples.  It emphasizes the regulatory aspects ensuring consumer safety.",
+      []
+    ],
+    [
+      "Food Additives and Regulations",
+      "This section details various food additives (umectants, gelling agents, preservatives, colorants, flavor enhancers, emulsifiers, stabilizers), their functions, and the importance of their regulation to ensure food safety.  It covers acceptable daily intake (ADI), maximum permitted levels (MPL), and No Observable Adverse Effect Level (NOAEL), along with international standards set by organizations like the FAO, WHO, Codex Alimentarius, FSSAI, FDA, and EFSA.  The content also briefly touches upon food safety and bioethics.",
+      []
+    ],
+    [
+      "Food Ethics and Research",
+      "This section covers ethical considerations in food production, including sustainability, animal welfare, food safety, security, and biotechnology.  It also details research ethics in food-related studies, emphasizing informed consent, confidentiality, integrity, animal welfare, environmental impact, and conflict of interest.",
+      []
+    ]
+  ]
+]

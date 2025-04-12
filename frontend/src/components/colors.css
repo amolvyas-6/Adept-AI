@@ -1,0 +1,20 @@
+/*:root {
+    --accent1: #46d29c;
+    --accent2: #2c4d40;
+    --accent3: #f6f6f6;
+    --black: #000000;
+    --com1: #fa9f37;
+    --com2: #e17400;
+}*/
+
+:root {
+    --accent2: #FEE715;
+    --accent2dark: #ccba16;
+    --accent1: #b5c3d1;
+    --accent3: #f6f6f6;
+    --accent4: #2c4d40;
+    --black: #000000;
+    --white: #ffffff;
+    --com1: #fa9f37;
+    --com2: #e17400;
+}
