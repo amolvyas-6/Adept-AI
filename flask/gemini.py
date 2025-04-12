@@ -15,8 +15,8 @@ import googleapiclient.discovery # For YouTube API integration
 # import os
 # GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 # YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY")
-# GEMINI_API_KEY = "AIzaSyCKGMJmX-EZF_zCdUHPMzCxbYLnxjwo4YQ" # Replace with your actual Gemini key
-# YOUTUBE_API_KEY = "AIzaSyCExMEEyxR1-XsZD7gskeaJoWUapVxYHno" # Replace with your actual YouTube API key
+GEMINI_API_KEY = "AIzaSyCKGMJmX-EZF_zCdUHPMzCxbYLnxjwo4YQ" # Replace with your actual Gemini key
+YOUTUBE_API_KEY = "AIzaSyCExMEEyxR1-XsZD7gskeaJoWUapVxYHno" # Replace with your actual YouTube API key
 
 if GEMINI_API_KEY == "YOUR_GEMINI_API_KEY":
     print("Error: Please replace 'YOUR_GEMINI_API_KEY' with your actual Google AI API key.")
@@ -383,7 +383,7 @@ def main():
     processed_count = 0
     skipped_count = 0
     skipped_due_to_limit_count = 0 # Initialize counter for limit skips
-    api_call_delay_seconds = 3 # Increase if hitting rate limits
+    api_call_delay_seconds = 1 # Increase if hitting rate limits
 
     for i, info_string in enumerate(info_list):
         print(f"\nProcessing Item {i+1}/{len(info_list)}...")

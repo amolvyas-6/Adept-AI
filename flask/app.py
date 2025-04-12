@@ -138,8 +138,6 @@ def getNotesFromClassroom():
 def getRoadmap():
     import time
     import os
-    from PyPDF2 import PdfReader
-    import fitz  # PyMuPDF
     import re
     from PIL import Image
     import google.generativeai as genai
