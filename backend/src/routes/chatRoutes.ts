@@ -9,4 +9,3 @@ router.patch("/:id", updateChat);
 router.delete("/:id", deleteChat);
 
 export default router;
-
