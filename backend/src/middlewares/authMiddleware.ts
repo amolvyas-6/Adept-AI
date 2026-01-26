@@ -1,4 +1,4 @@
-import { supabase } from "../dbClient.js";
+import { supabase } from "../utils/dbClient.js";
 
 export const authMiddleware = async (req: any, res: any, next: any) => {
   const token = req.headers.authorization?.split(" ")[1];

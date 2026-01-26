@@ -1,5 +1,5 @@
 import type { RequestHandler } from "express";
-import { supabase } from "../dbClient.js";
+import { supabase } from "../utils/dbClient.js";
 import { ApiError } from "../types/apiError.types.js";
 
 export const registerUser: RequestHandler = async (req, res) => {

@@ -1,4 +1,4 @@
-import { supabase } from "../dbClient.js";
+import { supabase } from "../utils/dbClient.js";
 import { ApiError } from "../types/apiError.types.js";
 
 import type { RequestHandler } from "express";
