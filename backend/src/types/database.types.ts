@@ -14,27 +14,21 @@ export type Database = {
   }
   public: {
     Tables: {
-      users: {
+      profiles: {
         Row: {
+          avatar: string | null
           created_at: string
-          email: string | null
-          id: number
-          password: string
-          username: string
+          user_id: string
         }
         Insert: {
+          avatar?: string | null
           created_at?: string
-          email?: string | null
-          id?: number
-          password: string
-          username: string
+          user_id: string
         }
         Update: {
+          avatar?: string | null
           created_at?: string
-          email?: string | null
-          id?: number
-          password?: string
-          username?: string
+          user_id?: string
         }
         Relationships: []
       }

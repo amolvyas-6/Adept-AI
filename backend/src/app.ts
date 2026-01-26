@@ -1,8 +1,9 @@
 import express from "express";
 import "dotenv/config";
-import userRoutes from "./routes/userRoutes.js";
+import profileRoutes from "./routes/profileRoutes.js";
 import documentRoutes from "./routes/documentRoutes.js";
 import chatRoutes from "./routes/chatRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
 
 const app = express();
@@ -11,9 +12,10 @@ const app = express();
 app.use(express.json());
 
 // Routes
-app.use("/users", userRoutes);
+app.use("/profiles", profileRoutes);
 app.use("/documents", documentRoutes);
 app.use("/chats", chatRoutes);
+app.use("/auth", authRoutes);
 
 app.use(errorHandler);
 
