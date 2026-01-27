@@ -6,6 +6,10 @@ import type { RequestHandler } from "express";
 const getProfile: RequestHandler<{ id: string }> = async (req, res) => {
   const id: string = req.params.id;
 
+  if (req.user.id !== id) {
+    throw new ApiError(403, "Forbidden: You can only access your own profile");
+  }
+
   const query = supabase
     .from("profiles")
     .select("*")
@@ -26,6 +30,11 @@ const getProfile: RequestHandler<{ id: string }> = async (req, res) => {
 
 const updateProfile: RequestHandler<{ id: string }> = async (req, res) => {
   const id: string = req.params.id;
+
+  if (req.user.id !== id) {
+    throw new ApiError(403, "Forbidden: You can only update your own profile");
+  }
+
   const { avatar } = req.body;
   if (!avatar) {
     throw new ApiError(400, "At least one field must be provided for update");

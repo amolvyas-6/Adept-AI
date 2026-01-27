@@ -14,6 +14,83 @@ export type Database = {
   }
   public: {
     Tables: {
+      courses: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          name: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          name?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          name?: string | null
+        }
+        Relationships: []
+      }
+      departments: {
+        Row: {
+          abbreviation: string | null
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          abbreviation?: string | null
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          abbreviation?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      documents: {
+        Row: {
+          course_id: string
+          created_at: string
+          id: string
+          title: string | null
+          unit: number | null
+          user_id: string | null
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          id?: string
+          title?: string | null
+          unit?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          id?: string
+          title?: string | null
+          unit?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar: string | null

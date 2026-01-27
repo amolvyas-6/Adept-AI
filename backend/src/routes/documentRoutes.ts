@@ -1,10 +1,18 @@
 import { Router } from "express";
-import { getAllDocuments, createDocument, deleteDocument } from "../controllers/documentController.js";
+import {
+  uploadDocument,
+  deleteDocument,
+  updateDocument,
+} from "../controllers/documentController.js";
+import { upload } from "../middlewares/fileUpload.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
+// import { authMiddleware } from "../middlewares/authMiddleware.js";
 
 const router = Router();
 
-router.get("/", getAllDocuments);
-router.post("/", createDocument);
-router.delete("/:id", deleteDocument);
+// router.use(asyncHandler(authMiddleware));
+router.post("/", upload.single("document"), asyncHandler(uploadDocument));
+router.delete("/:id", asyncHandler(deleteDocument));
+router.patch("/:id", asyncHandler(updateDocument));
 
 export default router;
