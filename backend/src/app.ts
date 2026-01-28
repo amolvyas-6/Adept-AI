@@ -1,9 +1,11 @@
 import express from "express";
 import "dotenv/config";
+import { errorHandler } from "./middlewares/errorHandler.js";
 import profileRoutes from "./routes/profileRoutes.js";
 import documentRoutes from "./routes/documentRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
-import { errorHandler } from "./middlewares/errorHandler.js";
+import courseRouter from "./routes/courseRoutes.js";
+import deptRoutes from "./routes/deptRoutes.js";
 
 const app = express();
 
@@ -14,6 +16,8 @@ app.use(express.json());
 app.use("/profiles", profileRoutes);
 app.use("/documents", documentRoutes);
 app.use("/auth", authRoutes);
+app.use("/courses", courseRouter);
+app.use("/departments", deptRoutes);
 
 app.use(errorHandler);
 

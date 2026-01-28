@@ -95,19 +95,63 @@ export type Database = {
         Row: {
           avatar: string | null
           created_at: string
+          dept_id: string | null
           user_id: string
         }
         Insert: {
           avatar?: string | null
           created_at?: string
+          dept_id?: string | null
           user_id: string
         }
         Update: {
           avatar?: string | null
           created_at?: string
+          dept_id?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_dept_id_fkey"
+            columns: ["dept_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      provided_by: {
+        Row: {
+          course_id: string
+          created_at: string
+          dept_id: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          dept_id: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          dept_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provided_by_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "provided_by_dept_id_fkey"
+            columns: ["dept_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
