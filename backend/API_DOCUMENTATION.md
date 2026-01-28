@@ -33,8 +33,6 @@ Authorization: Bearer <your_jwt_token>
 
 - All `/profiles` routes
 - `/documents` routes (authentication middleware commented out but designed for protection)
-- `/couses` routes (same as documents routes)
-- `/departments` routes (same as documents routes)
 
 ---
 
@@ -59,26 +57,12 @@ Creates a new user account and associated profile.
 | `email`    | `string` | ✅ Yes   | User's email address |
 | `password` | `string` | ✅ Yes   | User's password      |
 
-#### Example Request
+#### Response Body
 
-```json
-POST /auth/register
-Content-Type: application/json
-
-{
-  "email": "user@example.com",
-  "password": "securePassword123"
-}
-```
-
-#### Example Response
-
-```json
-{
-  "success": true,
-  "message": "Registration successful"
-}
-```
+| Field     | Type      | Description      |
+| --------- | --------- | ---------------- |
+| `success` | `boolean` | Operation status |
+| `message` | `string`  | Status message   |
 
 ---
 
@@ -98,20 +82,12 @@ Deletes a user account by ID.
 | --------- | --------------- | -------- | ----------------- |
 | `id`      | `string` (UUID) | ✅ Yes   | User ID to delete |
 
-#### Example Request
+#### Response Body
 
-```
-DELETE /auth/550e8400-e29b-41d4-a716-446655440000
-```
-
-#### Example Response
-
-```json
-{
-  "success": true,
-  "message": "User deleted successfully"
-}
-```
+| Field     | Type      | Description      |
+| --------- | --------- | ---------------- |
+| `success` | `boolean` | Operation status |
+| `message` | `string`  | Status message   |
 
 ---
 
@@ -137,27 +113,16 @@ Retrieves a user's profile. Users can only access their own profile.
 | --------- | --------------- | -------- | --------------------------------------- |
 | `id`      | `string` (UUID) | ✅ Yes   | User ID (must match authenticated user) |
 
-#### Example Request
+#### Response Body
 
-```
-GET /profiles/550e8400-e29b-41d4-a716-446655440000
-Authorization: Bearer <token>
-```
-
-#### Example Response
-
-```json
-{
-  "success": true,
-  "data": {
-    "user_id": "550e8400-e29b-41d4-a716-446655440000",
-    "avatar": "https://example.com/avatar.jpg",
-    "dept_id": "660e8400-e29b-41d4-a716-446655440001",
-    "created_at": "2026-01-28T10:00:00.000Z"
-  },
-  "message": "Profile fetched successfully"
-}
-```
+| Field             | Type                    | Description        |
+| ----------------- | ----------------------- | ------------------ |
+| `success`         | `boolean`               | Operation status   |
+| `message`         | `string`                | Status message     |
+| `data.user_id`    | `string` (UUID)         | User ID            |
+| `data.avatar`     | `string \| null`        | Avatar URL         |
+| `data.dept_id`    | `string \| null` (UUID) | Department ID      |
+| `data.created_at` | `string` (timestamp)    | Creation timestamp |
 
 ---
 
@@ -183,32 +148,16 @@ Updates a user's profile. Users can only update their own profile.
 | -------- | -------- | -------- | ------------------------------ |
 | `avatar` | `string` | ✅ Yes   | URL to the user's avatar image |
 
-#### Example Request
+#### Response Body
 
-```json
-PATCH /profiles/550e8400-e29b-41d4-a716-446655440000
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "avatar": "https://example.com/new-avatar.jpg"
-}
-```
-
-#### Example Response
-
-```json
-{
-  "success": true,
-  "data": {
-    "user_id": "550e8400-e29b-41d4-a716-446655440000",
-    "avatar": "https://example.com/new-avatar.jpg",
-    "dept_id": "660e8400-e29b-41d4-a716-446655440001",
-    "created_at": "2026-01-28T10:00:00.000Z"
-  },
-  "message": "Profile updated successfully"
-}
-```
+| Field             | Type                    | Description        |
+| ----------------- | ----------------------- | ------------------ |
+| `success`         | `boolean`               | Operation status   |
+| `message`         | `string`                | Status message     |
+| `data.user_id`    | `string` (UUID)         | User ID            |
+| `data.avatar`     | `string \| null`        | Avatar URL         |
+| `data.dept_id`    | `string \| null` (UUID) | Department ID      |
+| `data.created_at` | `string` (timestamp)    | Creation timestamp |
 
 ---
 
@@ -226,34 +175,17 @@ Retrieves all courses.
 | **Endpoint**       | `/courses`   |
 | **Authentication** | Not required |
 
-#### Example Request
+#### Response Body
 
-```
-GET /courses
-```
-
-#### Example Response
-
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": "770e8400-e29b-41d4-a716-446655440002",
-      "code": "CS101",
-      "name": "Introduction to Computer Science",
-      "created_at": "2026-01-28T10:00:00.000Z"
-    },
-    {
-      "id": "770e8400-e29b-41d4-a716-446655440003",
-      "code": "CS201",
-      "name": "Data Structures",
-      "created_at": "2026-01-28T11:00:00.000Z"
-    }
-  ],
-  "message": "Courses fetched successfully"
-}
-```
+| Field               | Type                 | Description        |
+| ------------------- | -------------------- | ------------------ |
+| `success`           | `boolean`            | Operation status   |
+| `message`           | `string`             | Status message     |
+| `data`              | `array`              | Array of courses   |
+| `data[].id`         | `string` (UUID)      | Course ID          |
+| `data[].code`       | `string`             | Course code        |
+| `data[].name`       | `string \| null`     | Course name        |
+| `data[].created_at` | `string` (timestamp) | Creation timestamp |
 
 ---
 
@@ -273,26 +205,16 @@ Retrieves a single course by its ID.
 | ---------- | --------------- | -------- | ----------- |
 | `courseId` | `string` (UUID) | ✅ Yes   | Course ID   |
 
-#### Example Request
+#### Response Body
 
-```
-GET /courses/770e8400-e29b-41d4-a716-446655440002
-```
-
-#### Example Response
-
-```json
-{
-  "success": true,
-  "data": {
-    "id": "770e8400-e29b-41d4-a716-446655440002",
-    "code": "CS101",
-    "name": "Introduction to Computer Science",
-    "created_at": "2026-01-28T10:00:00.000Z"
-  },
-  "message": "Course fetched successfully"
-}
-```
+| Field             | Type                 | Description        |
+| ----------------- | -------------------- | ------------------ |
+| `success`         | `boolean`            | Operation status   |
+| `message`         | `string`             | Status message     |
+| `data.id`         | `string` (UUID)      | Course ID          |
+| `data.code`       | `string`             | Course code        |
+| `data.name`       | `string \| null`     | Course name        |
+| `data.created_at` | `string` (timestamp) | Creation timestamp |
 
 ---
 
@@ -313,32 +235,16 @@ Creates a new course.
 | `code` | `string` | ✅ Yes   | Unique course code (e.g., "CS101") |
 | `name` | `string` | ❌ No    | Course name                        |
 
-#### Example Request
+#### Response Body
 
-```json
-POST /courses
-Content-Type: application/json
-
-{
-  "code": "CS301",
-  "name": "Algorithms"
-}
-```
-
-#### Example Response
-
-```json
-{
-  "success": true,
-  "data": {
-    "id": "770e8400-e29b-41d4-a716-446655440004",
-    "code": "CS301",
-    "name": "Algorithms",
-    "created_at": "2026-01-28T12:00:00.000Z"
-  },
-  "message": "Course created successfully"
-}
-```
+| Field             | Type                 | Description        |
+| ----------------- | -------------------- | ------------------ |
+| `success`         | `boolean`            | Operation status   |
+| `message`         | `string`             | Status message     |
+| `data.id`         | `string` (UUID)      | Course ID          |
+| `data.code`       | `string`             | Course code        |
+| `data.name`       | `string \| null`     | Course name        |
+| `data.created_at` | `string` (timestamp) | Creation timestamp |
 
 ---
 
@@ -367,31 +273,16 @@ Updates an existing course.
 
 > **Note**: At least one field should be provided for the update.
 
-#### Example Request
+#### Response Body
 
-```json
-PATCH /courses/770e8400-e29b-41d4-a716-446655440004
-Content-Type: application/json
-
-{
-  "name": "Advanced Algorithms"
-}
-```
-
-#### Example Response
-
-```json
-{
-  "success": true,
-  "data": {
-    "id": "770e8400-e29b-41d4-a716-446655440004",
-    "code": "CS301",
-    "name": "Advanced Algorithms",
-    "created_at": "2026-01-28T12:00:00.000Z"
-  },
-  "message": "Course updated successfully"
-}
-```
+| Field             | Type                 | Description        |
+| ----------------- | -------------------- | ------------------ |
+| `success`         | `boolean`            | Operation status   |
+| `message`         | `string`             | Status message     |
+| `data.id`         | `string` (UUID)      | Course ID          |
+| `data.code`       | `string`             | Course code        |
+| `data.name`       | `string \| null`     | Course name        |
+| `data.created_at` | `string` (timestamp) | Creation timestamp |
 
 ---
 
@@ -411,28 +302,17 @@ Deletes a course.
 | ---------- | --------------- | -------- | ------------------- |
 | `courseId` | `string` (UUID) | ✅ Yes   | Course ID to delete |
 
-#### Example Request
+#### Response Body
 
-```
-DELETE /courses/770e8400-e29b-41d4-a716-446655440004
-```
-
-#### Example Response
-
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": "770e8400-e29b-41d4-a716-446655440004",
-      "code": "CS301",
-      "name": "Advanced Algorithms",
-      "created_at": "2026-01-28T12:00:00.000Z"
-    }
-  ],
-  "message": "Course deleted successfully"
-}
-```
+| Field               | Type                 | Description            |
+| ------------------- | -------------------- | ---------------------- |
+| `success`           | `boolean`            | Operation status       |
+| `message`           | `string`             | Status message         |
+| `data`              | `array`              | Array of deleted items |
+| `data[].id`         | `string` (UUID)      | Course ID              |
+| `data[].code`       | `string`             | Course code            |
+| `data[].name`       | `string \| null`     | Course name            |
+| `data[].created_at` | `string` (timestamp) | Creation timestamp     |
 
 ---
 
@@ -453,31 +333,15 @@ Links a course to a department (many-to-many relationship).
 | `courseId`     | `string` (UUID) | ✅ Yes   | Course ID to assign                   |
 | `departmentId` | `string` (UUID) | ✅ Yes   | Department ID to assign the course to |
 
-#### Example Request
+#### Response Body
 
-```json
-POST /courses/providedBy
-Content-Type: application/json
-
-{
-  "courseId": "770e8400-e29b-41d4-a716-446655440002",
-  "departmentId": "660e8400-e29b-41d4-a716-446655440001"
-}
-```
-
-#### Example Response
-
-```json
-{
-  "success": true,
-  "data": {
-    "course_id": "770e8400-e29b-41d4-a716-446655440002",
-    "dept_id": "660e8400-e29b-41d4-a716-446655440001",
-    "created_at": "2026-01-28T12:30:00.000Z"
-  },
-  "message": "Course assigned to department successfully"
-}
-```
+| Field             | Type                 | Description        |
+| ----------------- | -------------------- | ------------------ |
+| `success`         | `boolean`            | Operation status   |
+| `message`         | `string`             | Status message     |
+| `data.course_id`  | `string` (UUID)      | Course ID          |
+| `data.dept_id`    | `string` (UUID)      | Department ID      |
+| `data.created_at` | `string` (timestamp) | Creation timestamp |
 
 ---
 
@@ -495,34 +359,17 @@ Retrieves all departments.
 | **Endpoint**       | `/departments` |
 | **Authentication** | Not required   |
 
-#### Example Request
+#### Response Body
 
-```
-GET /departments
-```
-
-#### Example Response
-
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": "660e8400-e29b-41d4-a716-446655440001",
-      "name": "Computer Science",
-      "abbreviation": "CS",
-      "created_at": "2026-01-28T10:00:00.000Z"
-    },
-    {
-      "id": "660e8400-e29b-41d4-a716-446655440002",
-      "name": "Electrical Engineering",
-      "abbreviation": "EE",
-      "created_at": "2026-01-28T11:00:00.000Z"
-    }
-  ],
-  "message": "Departments fetched successfully"
-}
-```
+| Field                 | Type                 | Description             |
+| --------------------- | -------------------- | ----------------------- |
+| `success`             | `boolean`            | Operation status        |
+| `message`             | `string`             | Status message          |
+| `data`                | `array`              | Array of departments    |
+| `data[].id`           | `string` (UUID)      | Department ID           |
+| `data[].name`         | `string`             | Department name         |
+| `data[].abbreviation` | `string \| null`     | Department abbreviation |
+| `data[].created_at`   | `string` (timestamp) | Creation timestamp      |
 
 ---
 
@@ -542,26 +389,16 @@ Retrieves a single department by its ID.
 | --------- | --------------- | -------- | ------------- |
 | `deptId`  | `string` (UUID) | ✅ Yes   | Department ID |
 
-#### Example Request
+#### Response Body
 
-```
-GET /departments/660e8400-e29b-41d4-a716-446655440001
-```
-
-#### Example Response
-
-```json
-{
-  "success": true,
-  "data": {
-    "id": "660e8400-e29b-41d4-a716-446655440001",
-    "name": "Computer Science",
-    "abbreviation": "CS",
-    "created_at": "2026-01-28T10:00:00.000Z"
-  },
-  "message": "Department fetched successfully"
-}
-```
+| Field               | Type                 | Description             |
+| ------------------- | -------------------- | ----------------------- |
+| `success`           | `boolean`            | Operation status        |
+| `message`           | `string`             | Status message          |
+| `data.id`           | `string` (UUID)      | Department ID           |
+| `data.name`         | `string`             | Department name         |
+| `data.abbreviation` | `string \| null`     | Department abbreviation |
+| `data.created_at`   | `string` (timestamp) | Creation timestamp      |
 
 ---
 
@@ -582,32 +419,16 @@ Creates a new department.
 | `name`         | `string` | ✅ Yes   | Department name         |
 | `abbreviation` | `string` | ❌ No    | Department abbreviation |
 
-#### Example Request
+#### Response Body
 
-```json
-POST /departments
-Content-Type: application/json
-
-{
-  "name": "Mechanical Engineering",
-  "abbreviation": "ME"
-}
-```
-
-#### Example Response
-
-```json
-{
-  "success": true,
-  "data": {
-    "id": "660e8400-e29b-41d4-a716-446655440003",
-    "name": "Mechanical Engineering",
-    "abbreviation": "ME",
-    "created_at": "2026-01-28T12:00:00.000Z"
-  },
-  "message": "Department created successfully"
-}
-```
+| Field               | Type                 | Description             |
+| ------------------- | -------------------- | ----------------------- |
+| `success`           | `boolean`            | Operation status        |
+| `message`           | `string`             | Status message          |
+| `data.id`           | `string` (UUID)      | Department ID           |
+| `data.name`         | `string`             | Department name         |
+| `data.abbreviation` | `string \| null`     | Department abbreviation |
+| `data.created_at`   | `string` (timestamp) | Creation timestamp      |
 
 ---
 
@@ -636,31 +457,16 @@ Updates an existing department.
 
 > **Note**: At least one field should be provided for the update.
 
-#### Example Request
+#### Response Body
 
-```json
-PATCH /departments/660e8400-e29b-41d4-a716-446655440003
-Content-Type: application/json
-
-{
-  "abbreviation": "MECH"
-}
-```
-
-#### Example Response
-
-```json
-{
-  "success": true,
-  "data": {
-    "id": "660e8400-e29b-41d4-a716-446655440003",
-    "name": "Mechanical Engineering",
-    "abbreviation": "MECH",
-    "created_at": "2026-01-28T12:00:00.000Z"
-  },
-  "message": "Department updated successfully"
-}
-```
+| Field               | Type                 | Description             |
+| ------------------- | -------------------- | ----------------------- |
+| `success`           | `boolean`            | Operation status        |
+| `message`           | `string`             | Status message          |
+| `data.id`           | `string` (UUID)      | Department ID           |
+| `data.name`         | `string`             | Department name         |
+| `data.abbreviation` | `string \| null`     | Department abbreviation |
+| `data.created_at`   | `string` (timestamp) | Creation timestamp      |
 
 ---
 
@@ -680,26 +486,16 @@ Deletes a department.
 | --------- | --------------- | -------- | ----------------------- |
 | `deptId`  | `string` (UUID) | ✅ Yes   | Department ID to delete |
 
-#### Example Request
+#### Response Body
 
-```
-DELETE /departments/660e8400-e29b-41d4-a716-446655440003
-```
-
-#### Example Response
-
-```json
-{
-  "success": true,
-  "data": {
-    "id": "660e8400-e29b-41d4-a716-446655440003",
-    "name": "Mechanical Engineering",
-    "abbreviation": "MECH",
-    "created_at": "2026-01-28T12:00:00.000Z"
-  },
-  "message": "Department deleted successfully"
-}
-```
+| Field               | Type                 | Description             |
+| ------------------- | -------------------- | ----------------------- |
+| `success`           | `boolean`            | Operation status        |
+| `message`           | `string`             | Status message          |
+| `data.id`           | `string` (UUID)      | Department ID           |
+| `data.name`         | `string`             | Department name         |
+| `data.abbreviation` | `string \| null`     | Department abbreviation |
+| `data.created_at`   | `string` (timestamp) | Creation timestamp      |
 
 ---
 
@@ -734,34 +530,18 @@ Uploads a PDF document and stores metadata in the database.
 - **File Type**: PDF only (`application/pdf`)
 - **Max Size**: 10 MB
 
-#### Example Request
+#### Response Body
 
-```
-POST /documents
-Content-Type: multipart/form-data
-
-document: [PDF file]
-title: "Chapter 1 Notes"
-unit: 1
-courseId: "770e8400-e29b-41d4-a716-446655440002"
-```
-
-#### Example Response
-
-```json
-{
-  "success": true,
-  "message": "Uploaded document successfully",
-  "data": {
-    "id": "880e8400-e29b-41d4-a716-446655440005",
-    "title": "Chapter 1 Notes",
-    "unit": 1,
-    "course_id": "770e8400-e29b-41d4-a716-446655440002",
-    "user_id": "550e8400-e29b-41d4-a716-446655440000",
-    "created_at": "2026-01-28T13:00:00.000Z"
-  }
-}
-```
+| Field             | Type                    | Description        |
+| ----------------- | ----------------------- | ------------------ |
+| `success`         | `boolean`               | Operation status   |
+| `message`         | `string`                | Status message     |
+| `data.id`         | `string` (UUID)         | Document ID        |
+| `data.title`      | `string \| null`        | Document title     |
+| `data.unit`       | `number \| null`        | Unit number        |
+| `data.course_id`  | `string` (UUID)         | Course ID          |
+| `data.user_id`    | `string \| null` (UUID) | Uploader user ID   |
+| `data.created_at` | `string` (timestamp)    | Creation timestamp |
 
 ---
 
@@ -791,34 +571,18 @@ Updates document metadata.
 
 > **Note**: At least one field must be provided for the update.
 
-#### Example Request
+#### Response Body
 
-```json
-PATCH /documents/880e8400-e29b-41d4-a716-446655440005
-Content-Type: application/json
-
-{
-  "title": "Chapter 1 - Updated Notes",
-  "unit": 2
-}
-```
-
-#### Example Response
-
-```json
-{
-  "success": true,
-  "message": "Updated document successfully",
-  "data": {
-    "id": "880e8400-e29b-41d4-a716-446655440005",
-    "title": "Chapter 1 - Updated Notes",
-    "unit": 2,
-    "course_id": "770e8400-e29b-41d4-a716-446655440002",
-    "user_id": "550e8400-e29b-41d4-a716-446655440000",
-    "created_at": "2026-01-28T13:00:00.000Z"
-  }
-}
-```
+| Field             | Type                    | Description        |
+| ----------------- | ----------------------- | ------------------ |
+| `success`         | `boolean`               | Operation status   |
+| `message`         | `string`                | Status message     |
+| `data.id`         | `string` (UUID)         | Document ID        |
+| `data.title`      | `string \| null`        | Document title     |
+| `data.unit`       | `number \| null`        | Unit number        |
+| `data.course_id`  | `string` (UUID)         | Course ID          |
+| `data.user_id`    | `string \| null` (UUID) | Uploader user ID   |
+| `data.created_at` | `string` (timestamp)    | Creation timestamp |
 
 ---
 
@@ -838,20 +602,12 @@ Deletes a document and its associated file from S3 storage.
 | --------- | --------------- | -------- | --------------------- |
 | `id`      | `string` (UUID) | ✅ Yes   | Document ID to delete |
 
-#### Example Request
+#### Response Body
 
-```
-DELETE /documents/880e8400-e29b-41d4-a716-446655440005
-```
-
-#### Example Response
-
-```json
-{
-  "status": true,
-  "message": "Document deleted successfully"
-}
-```
+| Field     | Type      | Description      |
+| --------- | --------- | ---------------- |
+| `status`  | `boolean` | Operation status |
+| `message` | `string`  | Status message   |
 
 ---
 
@@ -917,14 +673,14 @@ Links courses to departments (many-to-many relationship).
 
 ## Error Responses
 
-All errors follow a consistent format:
+All errors follow a consistent format.
 
-```json
-{
-  "success": false,
-  "message": "Error message description"
-}
-```
+#### Error Response Body
+
+| Field     | Type      | Description               |
+| --------- | --------- | ------------------------- |
+| `success` | `boolean` | Always `false` for errors |
+| `message` | `string`  | Error description         |
 
 ### Common HTTP Status Codes
 
@@ -935,44 +691,6 @@ All errors follow a consistent format:
 | `403`       | Forbidden - User doesn't have permission for this action |
 | `404`       | Not Found - Resource doesn't exist                       |
 | `500`       | Internal Server Error - Server-side error                |
-
-### Example Error Responses
-
-**401 Unauthorized:**
-
-```json
-{
-  "success": false,
-  "message": "Unauthorized"
-}
-```
-
-**403 Forbidden:**
-
-```json
-{
-  "success": false,
-  "message": "Forbidden: You can only access your own profile"
-}
-```
-
-**400 Bad Request:**
-
-```json
-{
-  "success": false,
-  "message": "No file uploaded"
-}
-```
-
-**400 Bad Request (File Type):**
-
-```json
-{
-  "success": false,
-  "message": "Only PDF files are allowed"
-}
-```
 
 ---
 
