@@ -3,7 +3,7 @@ import { deleteObject, putObject } from "../utils/s3Client.js";
 import { ApiError } from "../types/apiError.types.js";
 import { supabase } from "../utils/dbClient.js";
 
-const uploadDocument: RequestHandler = async (req, res) => {
+export const uploadDocument: RequestHandler = async (req, res) => {
   const file = req.file;
   if (!file) {
     throw new ApiError(400, "No file uploaded");
@@ -39,7 +39,10 @@ const uploadDocument: RequestHandler = async (req, res) => {
   });
 };
 
-const deleteDocument: RequestHandler<{ id: string }> = async (req, res) => {
+export const deleteDocument: RequestHandler<{ id: string }> = async (
+  req,
+  res
+) => {
   const id = req.params.id;
   const query = supabase
     .from("documents")
@@ -61,7 +64,10 @@ const deleteDocument: RequestHandler<{ id: string }> = async (req, res) => {
   });
 };
 
-const updateDocument: RequestHandler<{ id: string }> = async (req, res) => {
+export const updateDocument: RequestHandler<{ id: string }> = async (
+  req,
+  res
+) => {
   const id = req.params.id;
   const { title, unit, courseId } = req.body;
 
@@ -92,4 +98,21 @@ const updateDocument: RequestHandler<{ id: string }> = async (req, res) => {
   });
 };
 
-export { uploadDocument, deleteDocument, updateDocument };
+export const getDocument: RequestHandler<{ id: string }> = async (req, res) => {
+  const id = req.params.id;
+
+  const query = supabase
+    .from("documents")
+    .select("*, profiles(full_name), courses(name, code)")
+    .eq("id", id)
+    .single();
+  const { data, error } = await query;
+  if (error) {
+    throw new ApiError(404, error.message);
+  }
+  res.status(200).json({
+    success: true,
+    data: data,
+    message: "Document fetched successfully",
+  });
+};

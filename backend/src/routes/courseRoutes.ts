@@ -8,8 +8,11 @@ import {
   deleteCourse,
   assignCourseToDepartment,
 } from "../controllers/courseController.js";
+import { authMiddleware } from "../middlewares/authMiddleware.js";
 
 const router = Router();
+
+router.use(asyncHandler(authMiddleware));
 
 router.get("/", asyncHandler(getAllCourses));
 router.get("/:courseId", asyncHandler(getCourseById));

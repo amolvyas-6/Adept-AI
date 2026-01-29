@@ -7,8 +7,11 @@ import {
   updateDepartment,
   deleteDepartment,
 } from "../controllers/deptController.js";
+import { authMiddleware } from "../middlewares/authMiddleware.js";
 
 const router = Router();
+
+router.use(asyncHandler(authMiddleware));
 
 router.get("/", asyncHandler(getAllDepartments));
 router.get("/:deptId", asyncHandler(getDepartmentById));
