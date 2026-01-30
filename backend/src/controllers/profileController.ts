@@ -35,14 +35,14 @@ const updateProfile: RequestHandler<{ id: string }> = async (req, res) => {
     throw new ApiError(403, "Forbidden: You can only update your own profile");
   }
 
-  const { deptId, full_name } = req.body;
-  if (!deptId && !full_name) {
+  const { deptId, fullName } = req.body;
+  if (!deptId && !fullName) {
     throw new ApiError(400, "At least one field must be provided for update");
   }
 
   const updates: { dept_id?: string; full_name?: string } = {};
   if (deptId) updates.dept_id = deptId;
-  if (full_name) updates.full_name = full_name;
+  if (fullName) updates.full_name = fullName;
 
   const query = supabase
     .from("profiles")

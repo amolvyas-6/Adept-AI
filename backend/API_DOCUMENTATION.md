@@ -16,8 +16,9 @@
 4. [Course Routes](#course-routes)
 5. [Department Routes](#department-routes)
 6. [Document Routes](#document-routes)
-7. [Database Schema Reference](#database-schema-reference)
-8. [Error Responses](#error-responses)
+7. [Library Routes](#library-routes)
+8. [Database Schema Reference](#database-schema-reference)
+9. [Error Responses](#error-responses)
 
 ---
 
@@ -32,7 +33,8 @@ Authorization: Bearer <your_jwt_token>
 **Protected Routes:**
 
 - All `/profiles` routes
-- `/documents` routes (authentication middleware commented out but designed for protection)
+- All `/documents` routes
+- All `/library` routes
 
 ---
 
@@ -56,6 +58,7 @@ Creates a new user account and associated profile.
 | ---------- | -------- | -------- | -------------------- |
 | `email`    | `string` | ✅ Yes   | User's email address |
 | `password` | `string` | ✅ Yes   | User's password      |
+| `fullName` | `string` | ❌ No    | User's full name     |
 
 #### Response Body
 
@@ -120,7 +123,7 @@ Retrieves a user's profile. Users can only access their own profile.
 | `success`         | `boolean`               | Operation status   |
 | `message`         | `string`                | Status message     |
 | `data.user_id`    | `string` (UUID)         | User ID            |
-| `data.avatar`     | `string \| null`        | Avatar URL         |
+| `data.full_name`  | `string`                | User's full name   |
 | `data.dept_id`    | `string \| null` (UUID) | Department ID      |
 | `data.created_at` | `string` (timestamp)    | Creation timestamp |
 
@@ -144,9 +147,12 @@ Updates a user's profile. Users can only update their own profile.
 
 #### Request Body
 
-| Field    | Type     | Required | Description                    |
-| -------- | -------- | -------- | ------------------------------ |
-| `avatar` | `string` | ✅ Yes   | URL to the user's avatar image |
+| Field      | Type     | Required | Description      |
+| ---------- | -------- | -------- | ---------------- |
+| `fullName` | `string` | ❌ No    | User's full name |
+| `deptId`   | `string` | ❌ No    | Department ID    |
+
+> **Note**: At least one field must be provided for the update.
 
 #### Response Body
 
@@ -155,7 +161,7 @@ Updates a user's profile. Users can only update their own profile.
 | `success`         | `boolean`               | Operation status   |
 | `message`         | `string`                | Status message     |
 | `data.user_id`    | `string` (UUID)         | User ID            |
-| `data.avatar`     | `string \| null`        | Avatar URL         |
+| `data.full_name`  | `string`                | User's full name   |
 | `data.dept_id`    | `string \| null` (UUID) | Department ID      |
 | `data.created_at` | `string` (timestamp)    | Creation timestamp |
 
@@ -509,12 +515,12 @@ Base path: `/documents`
 
 Uploads a PDF document and stores metadata in the database.
 
-| Attribute          | Value                         |
-| ------------------ | ----------------------------- |
-| **Method**         | `POST`                        |
-| **Endpoint**       | `/documents`                  |
-| **Authentication** | Designed (currently disabled) |
-| **Content-Type**   | `multipart/form-data`         |
+| Attribute          | Value                 |
+| ------------------ | --------------------- |
+| **Method**         | `POST`                |
+| **Endpoint**       | `/documents`          |
+| **Authentication** | ✅ Required           |
+| **Content-Type**   | `multipart/form-data` |
 
 #### Request Body (Form Data)
 
@@ -545,15 +551,51 @@ Uploads a PDF document and stores metadata in the database.
 
 ---
 
+### Get Document by ID
+
+Retrieves a single document with its details and related information.
+
+| Attribute          | Value            |
+| ------------------ | ---------------- |
+| **Method**         | `GET`            |
+| **Endpoint**       | `/documents/:id` |
+| **Authentication** | ✅ Required      |
+
+#### Path Parameters
+
+| Parameter | Type            | Required | Description |
+| --------- | --------------- | -------- | ----------- |
+| `id`      | `string` (UUID) | ✅ Yes   | Document ID |
+
+#### Response Body
+
+| Field                     | Type                    | Description           |
+| ------------------------- | ----------------------- | --------------------- |
+| `success`                 | `boolean`               | Operation status      |
+| `message`                 | `string`                | Status message        |
+| `data.id`                 | `string` (UUID)         | Document ID           |
+| `data.title`              | `string \| null`        | Document title        |
+| `data.unit`               | `number \| null`        | Unit number           |
+| `data.course_id`          | `string` (UUID)         | Course ID             |
+| `data.user_id`            | `string \| null` (UUID) | Uploader user ID      |
+| `data.created_at`         | `string` (timestamp)    | Creation timestamp    |
+| `data.profiles`           | `object \| null`        | Uploader profile info |
+| `data.profiles.full_name` | `string`                | Uploader's full name  |
+| `data.courses`            | `object`                | Course information    |
+| `data.courses.name`       | `string \| null`        | Course name           |
+| `data.courses.code`       | `string`                | Course code           |
+
+---
+
 ### Update Document
 
 Updates document metadata.
 
-| Attribute          | Value                         |
-| ------------------ | ----------------------------- |
-| **Method**         | `PATCH`                       |
-| **Endpoint**       | `/documents/:id`              |
-| **Authentication** | Designed (currently disabled) |
+| Attribute          | Value            |
+| ------------------ | ---------------- |
+| **Method**         | `PATCH`          |
+| **Endpoint**       | `/documents/:id` |
+| **Authentication** | ✅ Required      |
 
 #### Path Parameters
 
@@ -590,11 +632,11 @@ Updates document metadata.
 
 Deletes a document and its associated file from S3 storage.
 
-| Attribute          | Value                         |
-| ------------------ | ----------------------------- |
-| **Method**         | `DELETE`                      |
-| **Endpoint**       | `/documents/:id`              |
-| **Authentication** | Designed (currently disabled) |
+| Attribute          | Value            |
+| ------------------ | ---------------- |
+| **Method**         | `DELETE`         |
+| **Endpoint**       | `/documents/:id` |
+| **Authentication** | ✅ Required      |
 
 #### Path Parameters
 
@@ -608,6 +650,98 @@ Deletes a document and its associated file from S3 storage.
 | --------- | --------- | ---------------- |
 | `status`  | `boolean` | Operation status |
 | `message` | `string`  | Status message   |
+
+---
+
+## Library Routes
+
+Base path: `/library`
+
+> ⚠️ **All routes require authentication**
+
+### Get User's Library
+
+Retrieves all documents saved in the authenticated user's personal library/collection.
+
+| Attribute          | Value       |
+| ------------------ | ----------- |
+| **Method**         | `GET`       |
+| **Endpoint**       | `/library`  |
+| **Authentication** | ✅ Required |
+
+#### Response Body
+
+| Field                | Type                 | Description              |
+| -------------------- | -------------------- | ------------------------ |
+| `success`            | `boolean`            | Operation status         |
+| `message`            | `string`             | Status message           |
+| `data`               | `array`              | Array of saved documents |
+| `data[].id`          | `string` (UUID)      | Library entry ID         |
+| `data[].saved_at`    | `string` (timestamp) | When document was saved  |
+| `data[].document_id` | `string` (UUID)      | Document ID              |
+| `data[].title`       | `string \| null`     | Document title           |
+| `data[].unit`        | `number \| null`     | Unit number              |
+| `data[].uploader`    | `string \| null`     | Full name of uploader    |
+| `data[].course_code` | `string`             | Course code              |
+| `data[].course_name` | `string \| null`     | Course name              |
+
+---
+
+### Add Document to Library
+
+Saves a document to the authenticated user's personal library/collection.
+
+| Attribute          | Value       |
+| ------------------ | ----------- |
+| **Method**         | `POST`      |
+| **Endpoint**       | `/library`  |
+| **Authentication** | ✅ Required |
+
+#### Request Body
+
+| Field        | Type            | Required | Description         |
+| ------------ | --------------- | -------- | ------------------- |
+| `documentId` | `string` (UUID) | ✅ Yes   | Document ID to save |
+
+#### Response Body
+
+| Field              | Type                 | Description        |
+| ------------------ | -------------------- | ------------------ |
+| `success`          | `boolean`            | Operation status   |
+| `message`          | `string`             | Status message     |
+| `data.id`          | `string` (UUID)      | Library entry ID   |
+| `data.user_id`     | `string` (UUID)      | User ID            |
+| `data.document_id` | `string` (UUID)      | Document ID        |
+| `data.created_at`  | `string` (timestamp) | Creation timestamp |
+
+---
+
+### Remove Document from Library
+
+Removes a document from the authenticated user's personal library/collection.
+
+| Attribute          | Value             |
+| ------------------ | ----------------- |
+| **Method**         | `DELETE`          |
+| **Endpoint**       | `/library/:docId` |
+| **Authentication** | ✅ Required       |
+
+#### Path Parameters
+
+| Parameter | Type            | Required | Description           |
+| --------- | --------------- | -------- | --------------------- |
+| `docId`   | `string` (UUID) | ✅ Yes   | Document ID to remove |
+
+#### Response Body
+
+| Field              | Type                 | Description        |
+| ------------------ | -------------------- | ------------------ |
+| `success`          | `boolean`            | Operation status   |
+| `message`          | `string`             | Status message     |
+| `data.id`          | `string` (UUID)      | Library entry ID   |
+| `data.user_id`     | `string` (UUID)      | User ID            |
+| `data.document_id` | `string` (UUID)      | Document ID        |
+| `data.created_at`  | `string` (timestamp) | Creation timestamp |
 
 ---
 
@@ -653,9 +787,22 @@ Deletes a document and its associated file from S3 storage.
 | Column       | Type                    | Required on Insert | Description                       |
 | ------------ | ----------------------- | ------------------ | --------------------------------- |
 | `user_id`    | `string` (UUID)         | ✅ Yes             | Primary key (linked to auth user) |
-| `avatar`     | `string \| null`        | ❌ No              | URL to avatar image               |
+| `full_name`  | `string`                | ❌ No (default "") | User's full name                  |
 | `dept_id`    | `string \| null` (UUID) | ❌ No              | Foreign key to departments        |
 | `created_at` | `string` (timestamp)    | ❌ Auto-generated  | Creation timestamp                |
+
+---
+
+### Library Table
+
+Junction table for user's saved documents (personal collections).
+
+| Column        | Type                 | Required on Insert | Description                     |
+| ------------- | -------------------- | ------------------ | ------------------------------- |
+| `id`          | `string` (UUID)      | ❌ Auto-generated  | Primary key                     |
+| `user_id`     | `string` (UUID)      | ✅ Yes             | Foreign key to profiles         |
+| `document_id` | `string` (UUID)      | ✅ Yes             | Foreign key to documents        |
+| `created_at`  | `string` (timestamp) | ❌ Auto-generated  | Creation timestamp (when saved) |
 
 ---
 
@@ -696,26 +843,30 @@ All errors follow a consistent format.
 
 ## API Routes Summary
 
-| Method   | Endpoint               | Description                 | Auth Required |
-| -------- | ---------------------- | --------------------------- | ------------- |
-| `POST`   | `/auth/register`       | Register new user           | ❌            |
-| `DELETE` | `/auth/:id`            | Delete user                 | ❌            |
-| `GET`    | `/profiles/:id`        | Get user profile            | ✅            |
-| `PATCH`  | `/profiles/:id`        | Update user profile         | ✅            |
-| `GET`    | `/courses`             | Get all courses             | ❌            |
-| `GET`    | `/courses/:courseId`   | Get course by ID            | ❌            |
-| `POST`   | `/courses`             | Create course               | ❌            |
-| `PATCH`  | `/courses/:courseId`   | Update course               | ❌            |
-| `DELETE` | `/courses/:courseId`   | Delete course               | ❌            |
-| `POST`   | `/courses/providedBy`  | Assign course to department | ❌            |
-| `GET`    | `/departments`         | Get all departments         | ❌            |
-| `GET`    | `/departments/:deptId` | Get department by ID        | ❌            |
-| `POST`   | `/departments`         | Create department           | ❌            |
-| `PATCH`  | `/departments/:deptId` | Update department           | ❌            |
-| `DELETE` | `/departments/:deptId` | Delete department           | ❌            |
-| `POST`   | `/documents`           | Upload document (PDF)       | ⚠️ Designed   |
-| `PATCH`  | `/documents/:id`       | Update document             | ⚠️ Designed   |
-| `DELETE` | `/documents/:id`       | Delete document             | ⚠️ Designed   |
+| Method   | Endpoint               | Description                  | Auth Required |
+| -------- | ---------------------- | ---------------------------- | ------------- |
+| `POST`   | `/auth/register`       | Register new user            | ❌            |
+| `DELETE` | `/auth/:id`            | Delete user                  | ❌            |
+| `GET`    | `/profiles/:id`        | Get user profile             | ✅            |
+| `PATCH`  | `/profiles/:id`        | Update user profile          | ✅            |
+| `GET`    | `/courses`             | Get all courses              | ❌            |
+| `GET`    | `/courses/:courseId`   | Get course by ID             | ❌            |
+| `POST`   | `/courses`             | Create course                | ❌            |
+| `PATCH`  | `/courses/:courseId`   | Update course                | ❌            |
+| `DELETE` | `/courses/:courseId`   | Delete course                | ❌            |
+| `POST`   | `/courses/providedBy`  | Assign course to department  | ❌            |
+| `GET`    | `/departments`         | Get all departments          | ❌            |
+| `GET`    | `/departments/:deptId` | Get department by ID         | ❌            |
+| `POST`   | `/departments`         | Create department            | ❌            |
+| `PATCH`  | `/departments/:deptId` | Update department            | ❌            |
+| `DELETE` | `/departments/:deptId` | Delete department            | ❌            |
+| `POST`   | `/documents`           | Upload document (PDF)        | ✅            |
+| `GET`    | `/documents/:id`       | Get document by ID           | ✅            |
+| `PATCH`  | `/documents/:id`       | Update document              | ✅            |
+| `DELETE` | `/documents/:id`       | Delete document              | ✅            |
+| `GET`    | `/library`             | Get user's library           | ✅            |
+| `POST`   | `/library`             | Add document to library      | ✅            |
+| `DELETE` | `/library/:docId`      | Remove document from library | ✅            |
 
 ---
 

@@ -15,12 +15,14 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.975.0",
     "@supabase/supabase-js": "^2.91.1",
+    "cors": "^2.8.6",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "multer": "^2.0.2",
     "typescript": "^5.9.3"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/multer": "^2.0.0",
     "@types/node": "^25.0.10",
