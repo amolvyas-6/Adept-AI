@@ -116,3 +116,29 @@ export const getDocument: RequestHandler<{ id: string }> = async (req, res) => {
     message: "Document fetched successfully",
   });
 };
+
+export const getAllDocuments: RequestHandler = async (req, res) => {
+  const { courseId, search } = req.query;
+
+  let query = supabase
+    .from("documents")
+    .select("*, profiles(full_name), courses(name, code)");
+
+  if (courseId) {
+    query = query.eq("course_id", courseId as string);
+  }
+
+  if (search) {
+    query = query.ilike("title", `%${search}%`);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    throw new ApiError(500, error.message);
+  }
+  res.status(200).json({
+    success: true,
+    data: data,
+    message: "Documents fetched successfully",
+  });
+};
