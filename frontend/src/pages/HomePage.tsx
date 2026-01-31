@@ -1,6 +1,6 @@
 import { Link } from "react-router";
 import { BookOpen, Library, GraduationCap, ArrowRight } from "lucide-react";
-import { ModeToggle } from "../components/mode-toggle";
+import { FloatingThemeToggle } from "../components/mode-toggle";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -29,7 +29,6 @@ export const HomePage = () => {
             <span className="text-xl font-bold tracking-tight">Adept AI</span>
           </div>
           <div className="flex items-center gap-4">
-            <ModeToggle />
             <Button
               asChild
               variant="secondary"
@@ -120,6 +119,9 @@ export const HomePage = () => {
           reserved.
         </footer>
       </div>
+
+      {/* Floating Theme Toggle */}
+      <FloatingThemeToggle />
     </div>
   );
 };

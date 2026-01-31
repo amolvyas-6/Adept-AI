@@ -23,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { FloatingThemeToggle } from "@/components/mode-toggle";
 import { BookOpen, Loader2 } from "lucide-react";
 
 // --- Schemas ---
@@ -36,6 +37,7 @@ const registerSchema = z
   .object({
     fullName: z.string().min(2, "Full name must be at least 2 characters"),
     email: z.string().email("Invalid email address"),
+    universityId: z.string().min(1, "Please select a university"),
     deptId: z.string().min(1, "Please select a department"),
     password: z.string().min(6, "Password must be at least 6 characters"),
     confirmPassword: z
@@ -59,23 +61,49 @@ export const AuthPage = () => {
     searchParams.get("mode") === "signup" ? "register" : "login";
 
   const [loading, setLoading] = useState(false);
+  const [universities, setUniversities] = useState<
+    { id: string; name: string }[]
+  >([]);
   const [departments, setDepartments] = useState<
     { id: string; name: string }[]
   >([]);
+  const [selectedUniversity, setSelectedUniversity] = useState<string>("");
+  const [loadingDepartments, setLoadingDepartments] = useState(false);
 
-  // Fetch departments on mount
+  // Fetch universities on mount
+  useEffect(() => {
+    const fetchUniversities = async () => {
+      try {
+        const data = await api.getUniversities();
+        setUniversities(data);
+      } catch (error) {
+        console.error("Failed to fetch universities", error);
+        toast.error("Failed to load universities. Please try again later.");
+      }
+    };
+    fetchUniversities();
+  }, []);
+
+  // Fetch departments when university changes
   useEffect(() => {
     const fetchDepartments = async () => {
+      if (!selectedUniversity) {
+        setDepartments([]);
+        return;
+      }
+      setLoadingDepartments(true);
       try {
-        const data = await api.getDepartments();
+        const data = await api.getDepartments(selectedUniversity);
         setDepartments(data);
       } catch (error) {
         console.error("Failed to fetch departments", error);
         toast.error("Failed to load departments. Please try again later.");
+      } finally {
+        setLoadingDepartments(false);
       }
     };
     fetchDepartments();
-  }, []);
+  }, [selectedUniversity]);
 
   // Login Form
   const {
@@ -117,6 +145,7 @@ export const AuthPage = () => {
         password: data.password,
         fullName: data.fullName,
         deptId: data.deptId,
+        universityId: data.universityId,
       });
 
       toast.success("Account created! You can now log in.");
@@ -238,16 +267,56 @@ export const AuthPage = () => {
                   )}
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="reg-university">University</Label>
+                  <Select
+                    onValueChange={(val) => {
+                      setSelectedUniversity(val);
+                      setRegisterValue("universityId", val);
+                      // Reset department when university changes
+                      setRegisterValue("deptId", "");
+                    }}
+                  >
+                    <SelectTrigger
+                      className={
+                        registerErrors.universityId ? "border-destructive" : ""
+                      }
+                    >
+                      <SelectValue placeholder="Select your university" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {universities.map((uni) => (
+                        <SelectItem key={uni.id} value={uni.id}>
+                          {uni.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {registerErrors.universityId && (
+                    <p className="text-xs text-destructive">
+                      {registerErrors.universityId.message}
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="reg-dept">Department</Label>
                   <Select
                     onValueChange={(val) => setRegisterValue("deptId", val)}
+                    disabled={!selectedUniversity || loadingDepartments}
                   >
                     <SelectTrigger
                       className={
                         registerErrors.deptId ? "border-destructive" : ""
                       }
                     >
-                      <SelectValue placeholder="Select your department" />
+                      <SelectValue
+                        placeholder={
+                          loadingDepartments
+                            ? "Loading departments..."
+                            : !selectedUniversity
+                              ? "Select a university first"
+                              : "Select your department"
+                        }
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       {departments.map((dept) => (
@@ -312,6 +381,9 @@ export const AuthPage = () => {
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* Floating Theme Toggle */}
+      <FloatingThemeToggle />
     </div>
   );
 };

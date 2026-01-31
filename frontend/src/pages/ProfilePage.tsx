@@ -37,11 +37,17 @@ interface Department {
   name: string;
 }
 
+interface University {
+  id: string;
+  name: string;
+}
+
 export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [university, setUniversity] = useState<University | null>(null);
   const [userEmail, setUserEmail] = useState<string>("");
 
   const {
@@ -64,13 +70,18 @@ export default function ProfilePage() {
 
         setUserEmail(session.user.email || "");
 
-        const [profileData, deptData] = await Promise.all([
-          api.getProfile(session.user.id),
-          api.getDepartments(),
-        ]);
-
+        const profileData = await api.getProfile(session.user.id);
         setProfile(profileData);
+
+        // Fetch departments for the user's university
+        const deptData = await api.getDepartments(profileData.university_id);
         setDepartments(deptData);
+
+        // Fetch university name
+        if (profileData.university_id) {
+          const uniData = await api.getUniversity(profileData.university_id);
+          setUniversity(uniData);
+        }
 
         // Set form values
         setValue("fullName", profileData.full_name || "");
@@ -148,6 +159,7 @@ export default function ProfilePage() {
               <p className="text-muted-foreground">{userEmail}</p>
               <p className="text-sm text-muted-foreground mt-1">
                 {getDepartmentName(profile?.dept_id || "")}
+                {university && ` • ${university.name}`}
               </p>
             </div>
           </div>
@@ -177,6 +189,19 @@ export default function ProfilePage() {
               />
               <p className="text-xs text-muted-foreground">
                 Email cannot be changed
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="university">University</Label>
+              <Input
+                id="university"
+                value={university?.name || ""}
+                disabled
+                className="bg-muted/50"
+              />
+              <p className="text-xs text-muted-foreground">
+                University cannot be changed
               </p>
             </div>
 
@@ -227,7 +252,7 @@ export default function ProfilePage() {
               <Button
                 type="submit"
                 disabled={saving || !isDirty}
-                className="bg-indigo-600 hover:bg-indigo-700"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white"
               >
                 {saving ? (
                   <>

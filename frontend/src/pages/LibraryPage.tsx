@@ -7,6 +7,8 @@ import {
   Library,
   Clock,
   BookOpen,
+  Grid3X3,
+  List,
 } from "lucide-react";
 import { Link } from "react-router";
 import { Card, CardContent } from "@/components/ui/card";
@@ -20,11 +22,14 @@ interface LayoutContext {
   profile: { full_name?: string; dept_id?: string } | null;
 }
 
+type ViewMode = "grid" | "list";
+
 export function LibraryPage() {
   useOutletContext<LayoutContext>();
   const [library, setLibrary] = useState<LibraryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
 
   useEffect(() => {
     fetchLibrary();
@@ -76,11 +81,44 @@ export function LibraryPage() {
   return (
     <div className="space-y-6 animate-fade-in-up">
       {/* Header */}
-      <header className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">My Library</h1>
-        <p className="text-muted-foreground">
-          Your personal collection of saved learning materials.
-        </p>
+      <header className="flex items-start justify-between">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold tracking-tight">My Library</h1>
+          <p className="text-muted-foreground">
+            Your personal collection of saved learning materials.
+          </p>
+        </div>
+
+        {/* View Toggle Slider */}
+        {library.length > 0 && (
+          <div className="relative flex items-center w-18 h-9 p-1 bg-muted rounded-lg border border-border/50">
+            <div
+              className={`absolute w-8 h-7 bg-background rounded-md shadow-sm transition-transform duration-200 ${
+                viewMode === "list" ? "translate-x-8" : "translate-x-0"
+              }`}
+            />
+            <button
+              onClick={() => setViewMode("grid")}
+              className={`relative z-10 flex items-center justify-center w-8 h-7 rounded-md transition-colors ${
+                viewMode === "grid"
+                  ? "text-foreground"
+                  : "text-muted-foreground"
+              }`}
+            >
+              <Grid3X3 className="size-4" />
+            </button>
+            <button
+              onClick={() => setViewMode("list")}
+              className={`relative z-10 flex items-center justify-center w-8 h-7 rounded-md transition-colors ${
+                viewMode === "list"
+                  ? "text-foreground"
+                  : "text-muted-foreground"
+              }`}
+            >
+              <List className="size-4" />
+            </button>
+          </div>
+        )}
       </header>
 
       {/* Library Stats */}
@@ -111,11 +149,52 @@ export function LibraryPage() {
             <p className="text-sm text-muted-foreground/70 mb-4">
               Start adding documents from the Documents page
             </p>
-            <Button asChild>
+            <Button
+              asChild
+              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+            >
               <Link to="/documents">Browse Documents</Link>
             </Button>
           </CardContent>
         </Card>
+      ) : viewMode === "grid" ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {library.map((item) => (
+            <Card
+              key={item.id}
+              className="border-border/50 bg-card/60 backdrop-blur-sm hover:bg-card hover:border-border transition-all group"
+            >
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="p-2 rounded-lg bg-indigo-500/10 shrink-0">
+                    <FileText className="size-5 text-indigo-500" />
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => handleRemove(item.document_id)}
+                    disabled={removingId === item.document_id}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                  >
+                    {removingId === item.document_id ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="size-4" />
+                    )}
+                  </Button>
+                </div>
+                <p className="font-medium line-clamp-2 mt-3">{item.title}</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {item.course_code} - {item.course_name}
+                </p>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-3">
+                  <Clock className="size-3" />
+                  Saved {formatDate(item.saved_at)}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       ) : (
         <div className="space-y-3">
           {library.map((item) => (

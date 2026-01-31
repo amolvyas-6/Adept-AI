@@ -19,11 +19,16 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
+import { toast } from "sonner";
 import type { User } from "@supabase/supabase-js";
 
 interface LayoutContext {
   user: User | null;
-  profile: { full_name?: string; dept_id?: string } | null;
+  profile: {
+    full_name?: string;
+    dept_id?: string;
+    university_id?: string;
+  } | null;
 }
 
 interface DashboardStats {
@@ -40,29 +45,36 @@ interface DashboardStats {
 export function DashboardPage() {
   const { user, profile } = useOutletContext<LayoutContext>();
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [universityName, setUniversityName] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
-      if (!user) return;
+      // Wait for both user and profile with university_id to be loaded
+      if (!user || !profile?.university_id) return;
 
       try {
-        // Fetch all documents via API
-        const documents = await api.getDocuments();
+        // Fetch university name
+        const university = await api.getUniversity(profile.university_id);
+        setUniversityName(university.name);
+
+        // Fetch all documents via API (filtered by user's university)
+        const universityId = profile.university_id;
+        const documents = await api.getDocuments({ universityId });
 
         // Fetch user's library via API
         const library = await api.getLibrary();
 
         // Get recent documents (last 5, sorted by created_at)
-        const sortedDocs = [...documents].sort(
+        const sortedDocs = [...library].sort(
           (a, b) =>
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            new Date(b.saved_at).getTime() - new Date(a.saved_at).getTime()
         );
         const recentDocuments = sortedDocs.slice(0, 5).map((doc) => ({
           id: doc.id,
           title: doc.title,
-          course_code: doc.courses?.code,
-          created_at: doc.created_at,
+          course_code: doc.course_code,
+          created_at: doc.saved_at,
         }));
 
         setStats({
@@ -72,13 +84,14 @@ export function DashboardPage() {
         });
       } catch (error) {
         console.error("Failed to fetch dashboard data:", error);
+        toast.error("Failed to load dashboard data");
       } finally {
         setLoading(false);
       }
     };
 
     fetchDashboardData();
-  }, [user]);
+  }, [user, profile?.university_id]);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -113,7 +126,17 @@ export function DashboardPage() {
           </span>
         </h1>
         <p className="text-muted-foreground">
-          Here's an overview of your learning journey.
+          Here's an overview of your learning journey
+          {universityName && (
+            <span>
+              {" "}
+              at{" "}
+              <span className="font-medium text-foreground">
+                {universityName}
+              </span>
+            </span>
+          )}
+          .
         </p>
       </header>
 
@@ -189,7 +212,7 @@ export function DashboardPage() {
             </div>
             <Button asChild variant="ghost" size="sm">
               <Link
-                to="/documents"
+                to="/library"
                 className="text-indigo-600 dark:text-indigo-400"
               >
                 View all

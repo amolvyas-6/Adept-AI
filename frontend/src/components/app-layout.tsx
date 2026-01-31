@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router";
 import { api } from "@/lib/api";
 import { AppSidebar } from "./app-sidebar";
+import { FloatingThemeToggle } from "./mode-toggle";
 import { Loader2 } from "lucide-react";
 import {
   SidebarInset,
@@ -24,6 +25,7 @@ interface UserInfo {
 interface Profile {
   full_name?: string;
   dept_id?: string;
+  university_id?: string;
 }
 
 // Map routes to page titles
@@ -129,6 +131,9 @@ export function AppLayout() {
           </div>
         </SidebarInset>
       </SidebarProvider>
+
+      {/* Floating Theme Toggle */}
+      <FloatingThemeToggle />
     </div>
   );
 }

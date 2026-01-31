@@ -63,12 +63,26 @@ export interface Profile {
   user_id: string;
   full_name: string;
   dept_id: string;
+  university_id: string;
 }
 
 export const api = {
   // Public endpoints
-  getDepartments: async (): Promise<{ id: string; name: string }[]> => {
-    const res = await fetch(`${BASE_URL}/departments`);
+  getUniversities: async (): Promise<{ id: string; name: string }[]> => {
+    const res = await fetch(`${BASE_URL}/universities`);
+    return handleResponse(res);
+  },
+
+  getUniversity: async (id: string): Promise<{ id: string; name: string }> => {
+    const res = await fetch(`${BASE_URL}/universities/${id}`);
+    return handleResponse(res);
+  },
+
+  getDepartments: async (
+    universityId?: string
+  ): Promise<{ id: string; name: string }[]> => {
+    const params = universityId ? `?universityId=${universityId}` : "";
+    const res = await fetch(`${BASE_URL}/departments${params}`);
     return handleResponse(res);
   },
 
@@ -77,6 +91,7 @@ export const api = {
     fullName: string;
     deptId: string;
     password: string;
+    universityId: string;
   }) => {
     const res = await fetch(`${BASE_URL}/auth/register`, {
       method: "POST",
@@ -90,10 +105,13 @@ export const api = {
   getDocuments: async (params?: {
     courseId?: string;
     search?: string;
+    universityId?: string;
   }): Promise<Document[]> => {
     const searchParams = new URLSearchParams();
     if (params?.courseId) searchParams.set("courseId", params.courseId);
     if (params?.search) searchParams.set("search", params.search);
+    if (params?.universityId)
+      searchParams.set("universityId", params.universityId);
 
     const query = searchParams.toString();
     const res = await authFetch(`/documents${query ? `?${query}` : ""}`);
@@ -102,6 +120,33 @@ export const api = {
 
   getDocument: async (id: string): Promise<Document> => {
     const res = await authFetch(`/documents/${id}`);
+    return handleResponse(res);
+  },
+
+  uploadDocument: async (data: {
+    file: File;
+    title: string;
+    unit: number;
+    courseId: string;
+  }): Promise<Document> => {
+    const token = await getAuthToken();
+    if (!token) {
+      throw new Error("Not authenticated");
+    }
+
+    const formData = new FormData();
+    formData.append("document", data.file);
+    formData.append("title", data.title);
+    formData.append("unit", data.unit.toString());
+    formData.append("courseId", data.courseId);
+
+    const res = await fetch(`${BASE_URL}/documents`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
     return handleResponse(res);
   },
 
@@ -144,10 +189,11 @@ export const api = {
   },
 
   // Protected endpoints - Courses
-  getCourses: async (): Promise<
-    { id: string; name: string; code: string }[]
-  > => {
-    const res = await authFetch("/courses");
+  getCourses: async (
+    universityId?: string
+  ): Promise<{ id: string; name: string; code: string }[]> => {
+    const params = universityId ? `?universityId=${universityId}` : "";
+    const res = await authFetch(`/courses${params}`);
     return handleResponse(res);
   },
 

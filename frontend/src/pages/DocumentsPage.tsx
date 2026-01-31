@@ -11,7 +11,10 @@ import {
   BookOpen,
   User,
   Calendar,
+  Upload,
+  Check,
 } from "lucide-react";
+import { AddDocumentDialog } from "@/components/add-document-dialog";
 import {
   Card,
   CardContent,
@@ -34,32 +37,46 @@ import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 interface LayoutContext {
   user: SupabaseUser | null;
-  profile: { full_name?: string; dept_id?: string } | null;
+  profile: {
+    full_name?: string;
+    dept_id?: string;
+    university_id?: string;
+  } | null;
 }
 
 type ViewMode = "grid" | "list";
 
 export function DocumentsPage() {
-  useOutletContext<LayoutContext>();
+  const { profile } = useOutletContext<LayoutContext>();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [courses, setCourses] = useState<
     { id: string; name: string; code: string }[]
   >([]);
+  const [libraryDocIds, setLibraryDocIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCourse, setSelectedCourse] = useState<string>("all");
   const [addingToLibrary, setAddingToLibrary] = useState<string | null>(null);
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
+      // Wait for profile to be loaded before fetching
+      if (!profile?.university_id) {
+        return;
+      }
+
       try {
-        const [docsData, coursesData] = await Promise.all([
-          api.getDocuments(),
-          api.getCourses(),
+        const universityId = profile.university_id;
+        const [docsData, coursesData, libraryData] = await Promise.all([
+          api.getDocuments({ universityId }),
+          api.getCourses(universityId),
+          api.getLibrary(),
         ]);
         setDocuments(docsData);
         setCourses(coursesData);
+        setLibraryDocIds(new Set(libraryData.map((item) => item.document_id)));
       } catch (error) {
         console.error("Failed to fetch documents:", error);
         toast.error("Failed to load documents");
@@ -69,12 +86,24 @@ export function DocumentsPage() {
     };
 
     fetchData();
-  }, []);
+  }, [profile?.university_id]);
+
+  const refreshDocuments = async () => {
+    try {
+      const universityId = profile?.university_id;
+      const docsData = await api.getDocuments({ universityId });
+      setDocuments(docsData);
+      toast.success("Document uploaded successfully");
+    } catch (error) {
+      console.error("Failed to refresh documents:", error);
+    }
+  };
 
   const handleAddToLibrary = async (documentId: string) => {
     setAddingToLibrary(documentId);
     try {
       await api.addToLibrary(documentId);
+      setLibraryDocIds((prev) => new Set(prev).add(documentId));
       toast.success("Document added to library");
     } catch (error: any) {
       toast.error(error.message || "Failed to add to library");
@@ -149,22 +178,44 @@ export function DocumentsPage() {
           </Select>
         </div>
 
-        {/* View Toggle */}
-        <div className="flex items-center gap-1 p-1 bg-muted rounded-lg">
+        <div className="flex items-center gap-3">
+          {/* Add Document Button */}
           <Button
-            variant={viewMode === "grid" ? "secondary" : "ghost"}
-            size="icon-sm"
-            onClick={() => setViewMode("grid")}
+            onClick={() => setIsUploadDialogOpen(true)}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white"
           >
-            <Grid3X3 className="size-4" />
+            <Upload className="size-4 mr-2" />
+            Add Document
           </Button>
-          <Button
-            variant={viewMode === "list" ? "secondary" : "ghost"}
-            size="icon-sm"
-            onClick={() => setViewMode("list")}
-          >
-            <List className="size-4" />
-          </Button>
+
+          {/* View Toggle Slider */}
+          <div className="relative flex items-center w-18 h-9 p-1 bg-muted rounded-lg border border-border/50">
+            <div
+              className={`absolute w-8 h-7 bg-background rounded-md shadow-sm transition-transform duration-200 ${
+                viewMode === "list" ? "translate-x-8" : "translate-x-0"
+              }`}
+            />
+            <button
+              onClick={() => setViewMode("grid")}
+              className={`relative z-10 flex items-center justify-center w-8 h-7 rounded-md transition-colors ${
+                viewMode === "grid"
+                  ? "text-foreground"
+                  : "text-muted-foreground"
+              }`}
+            >
+              <Grid3X3 className="size-4" />
+            </button>
+            <button
+              onClick={() => setViewMode("list")}
+              className={`relative z-10 flex items-center justify-center w-8 h-7 rounded-md transition-colors ${
+                viewMode === "list"
+                  ? "text-foreground"
+                  : "text-muted-foreground"
+              }`}
+            >
+              <List className="size-4" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -185,112 +236,148 @@ export function DocumentsPage() {
         </Card>
       ) : viewMode === "grid" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredDocuments.map((doc) => (
-            <Card
-              key={doc.id}
-              className="border-border/50 bg-card/60 backdrop-blur-sm hover:bg-card hover:border-border transition-all group"
-            >
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="p-2 rounded-lg bg-indigo-500/10 shrink-0">
-                    <FileText className="size-5 text-indigo-500" />
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={() => handleAddToLibrary(doc.id)}
-                    disabled={addingToLibrary === doc.id}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    {addingToLibrary === doc.id ? (
-                      <Loader2 className="size-4 animate-spin" />
+          {filteredDocuments.map((doc) => {
+            const isInLibrary = libraryDocIds.has(doc.id);
+            return (
+              <Card
+                key={doc.id}
+                className={`backdrop-blur-sm hover:border-border transition-all group ${
+                  isInLibrary
+                    ? "border-emerald-500/50 bg-emerald-500/5"
+                    : "border-border/50 bg-card/60 hover:bg-card"
+                }`}
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div
+                      className={`p-2 rounded-lg shrink-0 ${isInLibrary ? "bg-emerald-500/10" : "bg-indigo-500/10"}`}
+                    >
+                      <FileText
+                        className={`size-5 ${isInLibrary ? "text-emerald-500" : "text-indigo-500"}`}
+                      />
+                    </div>
+                    {isInLibrary ? (
+                      <div className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+                        <Check className="size-3.5" />
+                        <span>In Library</span>
+                      </div>
                     ) : (
-                      <Plus className="size-4" />
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => handleAddToLibrary(doc.id)}
+                        disabled={addingToLibrary === doc.id}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        {addingToLibrary === doc.id ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                          <Plus className="size-4" />
+                        )}
+                      </Button>
                     )}
-                  </Button>
-                </div>
-                <CardTitle className="text-base line-clamp-2 mt-2">
-                  {doc.title}
-                </CardTitle>
-                {doc.courses && (
-                  <CardDescription>
-                    {doc.courses.code} - {doc.courses.name}
-                  </CardDescription>
-                )}
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <User className="size-3" />
-                    {doc.profiles?.full_name || "Unknown"}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Calendar className="size-3" />
-                    {formatDate(doc.created_at)}
-                  </span>
-                </div>
-                {doc.unit && (
-                  <div className="mt-2">
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-                      Unit {doc.unit}
+                  </div>
+                  <CardTitle className="text-base line-clamp-2 mt-2">
+                    {doc.title}
+                  </CardTitle>
+                  {doc.courses && (
+                    <CardDescription>
+                      {doc.courses.code} - {doc.courses.name}
+                    </CardDescription>
+                  )}
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <User className="size-3" />
+                      {doc.profiles?.full_name || "Unknown"}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Calendar className="size-3" />
+                      {formatDate(doc.created_at)}
                     </span>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+                  {doc.unit && (
+                    <div className="mt-2">
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                        Unit {doc.unit}
+                      </span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       ) : (
         <div className="space-y-2">
-          {filteredDocuments.map((doc) => (
-            <Card
-              key={doc.id}
-              className="border-border/50 bg-card/60 backdrop-blur-sm hover:bg-card hover:border-border transition-all group"
-            >
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-4 min-w-0 flex-1">
-                    <div className="p-2 rounded-lg bg-indigo-500/10 shrink-0">
-                      <FileText className="size-5 text-indigo-500" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium truncate">{doc.title}</p>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-                        {doc.courses && (
-                          <span>
-                            {doc.courses.code} - {doc.courses.name}
+          {filteredDocuments.map((doc) => {
+            const isInLibrary = libraryDocIds.has(doc.id);
+            return (
+              <Card
+                key={doc.id}
+                className={`backdrop-blur-sm hover:border-border transition-all group ${
+                  isInLibrary
+                    ? "border-emerald-500/50 bg-emerald-500/5"
+                    : "border-border/50 bg-card/60 hover:bg-card"
+                }`}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-4 min-w-0 flex-1">
+                      <div
+                        className={`p-2 rounded-lg shrink-0 ${isInLibrary ? "bg-emerald-500/10" : "bg-indigo-500/10"}`}
+                      >
+                        <FileText
+                          className={`size-5 ${isInLibrary ? "text-emerald-500" : "text-indigo-500"}`}
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium truncate">{doc.title}</p>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                          {doc.courses && (
+                            <span>
+                              {doc.courses.code} - {doc.courses.name}
+                            </span>
+                          )}
+                          <span className="flex items-center gap-1">
+                            <User className="size-3" />
+                            {doc.profiles?.full_name || "Unknown"}
                           </span>
-                        )}
-                        <span className="flex items-center gap-1">
-                          <User className="size-3" />
-                          {doc.profiles?.full_name || "Unknown"}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Calendar className="size-3" />
-                          {formatDate(doc.created_at)}
-                        </span>
-                        {doc.unit && <span>Unit {doc.unit}</span>}
+                          <span className="flex items-center gap-1">
+                            <Calendar className="size-3" />
+                            {formatDate(doc.created_at)}
+                          </span>
+                          {doc.unit && <span>Unit {doc.unit}</span>}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleAddToLibrary(doc.id)}
-                    disabled={addingToLibrary === doc.id}
-                    className="shrink-0"
-                  >
-                    {addingToLibrary === doc.id ? (
-                      <Loader2 className="size-4 animate-spin mr-2" />
+                    {isInLibrary ? (
+                      <div className="flex items-center gap-1.5 text-sm text-emerald-600 dark:text-emerald-400 shrink-0">
+                        <Check className="size-4" />
+                        <span>In Library</span>
+                      </div>
                     ) : (
-                      <Plus className="size-4 mr-2" />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleAddToLibrary(doc.id)}
+                        disabled={addingToLibrary === doc.id}
+                        className="shrink-0"
+                      >
+                        {addingToLibrary === doc.id ? (
+                          <Loader2 className="size-4 animate-spin mr-2" />
+                        ) : (
+                          <Plus className="size-4 mr-2" />
+                        )}
+                        Add to Library
+                      </Button>
                     )}
-                    Add to Library
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 
@@ -298,6 +385,14 @@ export function DocumentsPage() {
       <p className="text-sm text-muted-foreground text-center">
         Showing {filteredDocuments.length} of {documents.length} documents
       </p>
+
+      {/* Upload Document Dialog */}
+      <AddDocumentDialog
+        open={isUploadDialogOpen}
+        onOpenChange={setIsUploadDialogOpen}
+        courses={courses}
+        onSuccess={refreshDocuments}
+      />
     </div>
   );
 }
