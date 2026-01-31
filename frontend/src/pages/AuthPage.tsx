@@ -4,7 +4,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useNavigate, useSearchParams } from "react-router";
 import { toast } from "sonner";
-import { supabase } from "@/lib/supabase";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -90,13 +89,7 @@ export const AuthPage = () => {
   const onLogin = async (data: LoginFormValues) => {
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: data.email,
-        password: data.password,
-      });
-
-      if (error) throw error;
-
+      await api.login(data.email, data.password);
       toast.success("Welcome back!");
       navigate("/dashboard");
     } catch (error: any) {
