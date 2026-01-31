@@ -20,20 +20,31 @@ export type Database = {
           created_at: string
           id: string
           name: string | null
+          university_id: string
         }
         Insert: {
           code: string
           created_at?: string
           id?: string
           name?: string | null
+          university_id: string
         }
         Update: {
           code?: string
           created_at?: string
           id?: string
           name?: string | null
+          university_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "courses_university_id_fkey"
+            columns: ["university_id"]
+            isOneToOne: false
+            referencedRelation: "universities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       departments: {
         Row: {
@@ -41,20 +52,31 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          university_id: string
         }
         Insert: {
           abbreviation?: string | null
           created_at?: string
           id?: string
           name: string
+          university_id: string
         }
         Update: {
           abbreviation?: string | null
           created_at?: string
           id?: string
           name?: string
+          university_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "departments_university_id_fkey"
+            columns: ["university_id"]
+            isOneToOne: false
+            referencedRelation: "universities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       documents: {
         Row: {
@@ -139,18 +161,21 @@ export type Database = {
           created_at: string
           dept_id: string | null
           full_name: string
+          university_id: string
           user_id: string
         }
         Insert: {
           created_at?: string
           dept_id?: string | null
           full_name?: string
+          university_id: string
           user_id: string
         }
         Update: {
           created_at?: string
           dept_id?: string | null
           full_name?: string
+          university_id?: string
           user_id?: string
         }
         Relationships: [
@@ -159,6 +184,13 @@ export type Database = {
             columns: ["dept_id"]
             isOneToOne: false
             referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_university_id_fkey"
+            columns: ["university_id"]
+            isOneToOne: false
+            referencedRelation: "universities"
             referencedColumns: ["id"]
           },
         ]
@@ -195,6 +227,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      universities: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
       }
     }
     Views: {

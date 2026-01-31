@@ -3,7 +3,11 @@ import { supabase } from "../utils/dbClient.js";
 import { ApiError } from "../types/apiError.types.js";
 
 export const getAllDepartments: RequestHandler = async (req, res) => {
-  const query = supabase.from("departments").select("*");
+  const universityId = req.query.universityId as string | undefined;
+  let query = supabase.from("departments").select("*");
+  if (universityId) {
+    query = query.eq("university_id", universityId);
+  }
   const { data, error } = await query;
   if (error) {
     throw new ApiError(500, error.message);
@@ -38,10 +42,10 @@ export const getDepartmentById: RequestHandler<{ deptId: string }> = async (
 };
 
 export const createDepartment: RequestHandler = async (req, res) => {
-  const { name, abbreviation } = req.body;
+  const { name, abbreviation, universityId } = req.body;
   const createDeptQuery = supabase
     .from("departments")
-    .insert([{ name, abbreviation }])
+    .insert([{ name, abbreviation, university_id: universityId }])
     .select()
     .single();
 
@@ -61,11 +65,16 @@ export const updateDepartment: RequestHandler<{ deptId: string }> = async (
   res
 ) => {
   const deptId = req.params.deptId;
-  const { name, abbreviation } = req.body;
+  const { name, abbreviation, universityId } = req.body;
 
-  const updates: { name?: string; abbreviation?: string } = {};
+  const updates: {
+    name?: string;
+    abbreviation?: string;
+    university_id?: string;
+  } = {};
   if (name) updates.name = name;
   if (abbreviation) updates.abbreviation = abbreviation;
+  if (universityId) updates.university_id = universityId;
   const query = supabase
     .from("departments")
     .update(updates)

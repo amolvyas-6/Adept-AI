@@ -118,7 +118,21 @@ export const getDocument: RequestHandler<{ id: string }> = async (req, res) => {
 };
 
 export const getAllDocuments: RequestHandler = async (req, res) => {
-  const { courseId, search } = req.query;
+  const { courseId, search, universityId } = req.query;
+
+  // If filtering by university, first get course IDs for that university
+  let courseIdsForUniversity: string[] | null = null;
+  if (universityId) {
+    const { data: courses, error: coursesError } = await supabase
+      .from("courses")
+      .select("id")
+      .eq("university_id", universityId as string);
+
+    if (coursesError) {
+      throw new ApiError(500, coursesError.message);
+    }
+    courseIdsForUniversity = courses?.map((c) => c.id) || [];
+  }
 
   let query = supabase
     .from("documents")
@@ -132,11 +146,24 @@ export const getAllDocuments: RequestHandler = async (req, res) => {
     query = query.ilike("title", `%${search}%`);
   }
 
+  // Filter by university's courses
+  if (courseIdsForUniversity !== null) {
+    if (courseIdsForUniversity.length === 0) {
+      // No courses for this university, return empty
+      return res.status(200).json({
+        success: true,
+        data: [],
+        message: "Documents fetched successfully",
+      });
+    }
+    query = query.in("course_id", courseIdsForUniversity);
+  }
+
   const { data, error } = await query;
   if (error) {
     throw new ApiError(500, error.message);
   }
-  res.status(200).json({
+  return res.status(200).json({
     success: true,
     data: data,
     message: "Documents fetched successfully",

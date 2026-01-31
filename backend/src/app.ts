@@ -8,6 +8,7 @@ import courseRouter from "./routes/courseRoutes.js";
 import deptRoutes from "./routes/deptRoutes.js";
 import libraryRoutes from "./routes/libraryRoutes.js";
 import cors from "cors";
+import universityRoutes from "./routes/universityRoutes.js";
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.use("/auth", authRoutes);
 app.use("/courses", courseRouter);
 app.use("/departments", deptRoutes);
 app.use("/libraries", libraryRoutes);
+app.use("/universities", universityRoutes);
 
 app.use(errorHandler);
 

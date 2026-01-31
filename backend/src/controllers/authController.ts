@@ -3,7 +3,7 @@ import { supabase } from "../utils/dbClient.js";
 import { ApiError } from "../types/apiError.types.js";
 
 export const registerUser: RequestHandler = async (req, res) => {
-  const { email, password, deptId, fullName } = req.body;
+  const { email, password, deptId, fullName, universityId } = req.body;
   const {
     data: { user },
     error,
@@ -21,9 +21,14 @@ export const registerUser: RequestHandler = async (req, res) => {
   }
 
   const userId: string = user.id;
-  const query = supabase
-    .from("profiles")
-    .insert([{ user_id: userId, dept_id: deptId, full_name: fullName }]);
+  const query = supabase.from("profiles").insert([
+    {
+      user_id: userId,
+      dept_id: deptId,
+      full_name: fullName,
+      university_id: universityId,
+    },
+  ]);
   const { error: profileError } = await query;
 
   if (profileError) {

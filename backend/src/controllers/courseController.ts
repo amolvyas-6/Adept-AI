@@ -3,7 +3,11 @@ import { supabase } from "../utils/dbClient.js";
 import { ApiError } from "../types/apiError.types.js";
 
 export const getAllCourses: RequestHandler = async (req, res) => {
-  const query = supabase.from("courses").select("*");
+  const universityId = req.query.universityId as string | undefined;
+  let query = supabase.from("courses").select("*");
+  if (universityId) {
+    query = query.eq("university_id", universityId);
+  }
   const { data, error } = await query;
   if (error) {
     throw new ApiError(500, error.message);
@@ -38,10 +42,10 @@ export const getCourseById: RequestHandler<{ courseId: string }> = async (
 };
 
 export const createCourse: RequestHandler = async (req, res) => {
-  const { name, code } = req.body;
+  const { name, code, universityId } = req.body;
   const createCourseQuery = supabase
     .from("courses")
-    .insert([{ name, code }])
+    .insert([{ name, code, university_id: universityId }])
     .select()
     .single();
 
@@ -62,11 +66,12 @@ export const updateCourse: RequestHandler<{ courseId: string }> = async (
   res
 ) => {
   const courseId = req.params.courseId;
-  const { name, code } = req.body;
+  const { name, code, universityId } = req.body;
 
-  const updates: { name?: string; code?: string } = {};
+  const updates: { name?: string; code?: string; university_id?: string } = {};
   if (name) updates.name = name;
   if (code) updates.code = code;
+  if (universityId) updates.university_id = universityId;
 
   const query = supabase
     .from("courses")
