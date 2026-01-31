@@ -30,7 +30,11 @@ export const HomePage = () => {
           </div>
           <div className="flex items-center gap-4">
             <ModeToggle />
-            <Button asChild variant="secondary" className="rounded-full font-medium">
+            <Button
+              asChild
+              variant="secondary"
+              className="rounded-full font-medium"
+            >
               <Link to="/auth">Sign In</Link>
             </Button>
           </div>
@@ -46,24 +50,36 @@ export const HomePage = () => {
               </span>
               Now available for all departments
             </div>
-            
-            <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-[1.1] bg-gradient-to-br from-foreground to-muted-foreground bg-clip-text text-transparent">
+
+            <h1 className="text-5xl pb-1 md:text-7xl font-bold tracking-tight leading-[1.1] bg-linear-to-br from-foreground to-muted-foreground bg-clip-text text-transparent">
               Master your curriculum with intelligent resources.
             </h1>
-            
+
             <p className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto">
               Access a centralized library of course materials, track your
               progress, and organize your learning journey in one place.
             </p>
-            
+
             <div className="pt-8 flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Button asChild size="lg" className="rounded-full px-8 h-14 text-base bg-indigo-600 hover:bg-indigo-500 text-white border-0 shadow-lg shadow-indigo-500/20">
-                <Link to="/auth?mode=signup" className="group flex items-center gap-2">
+              <Button
+                asChild
+                size="lg"
+                className="rounded-full px-8 h-14 text-base bg-indigo-600 hover:bg-indigo-500 text-white border-0 shadow-lg shadow-indigo-500/20"
+              >
+                <Link
+                  to="/auth?mode=signup"
+                  className="group flex items-center gap-2"
+                >
                   Get Started
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </Button>
-              <Button asChild variant="outline" size="lg" className="rounded-full px-8 h-14 text-base border-border bg-background/50 backdrop-blur-sm">
+              <Button
+                asChild
+                variant="outline"
+                size="lg"
+                className="rounded-full px-8 h-14 text-base border-border bg-background/50 backdrop-blur-sm"
+              >
                 <Link to="/auth">Log In</Link>
               </Button>
             </div>
@@ -73,19 +89,25 @@ export const HomePage = () => {
         {/* Features Grid */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-6 pb-20 animate-fade-in-up delay-200">
           <FeatureCard
-            icon={<Library className="w-6 h-6 text-indigo-500 dark:text-indigo-400" />}
+            icon={
+              <Library className="w-6 h-6 text-indigo-500 dark:text-indigo-400" />
+            }
             title="Digital Library"
             description="Browse and save documents from various courses directly to your personal collection."
             delay="delay-100"
           />
           <FeatureCard
-            icon={<GraduationCap className="w-6 h-6 text-rose-500 dark:text-rose-400" />}
+            icon={
+              <GraduationCap className="w-6 h-6 text-rose-500 dark:text-rose-400" />
+            }
             title="Department Focused"
             description="Tailored resources organized by department to help you find exactly what you need."
             delay="delay-200"
           />
           <FeatureCard
-            icon={<BookOpen className="w-6 h-6 text-emerald-500 dark:text-emerald-400" />}
+            icon={
+              <BookOpen className="w-6 h-6 text-emerald-500 dark:text-emerald-400" />
+            }
             title="Smart Learning"
             description="Curated content designed to enhance your understanding and academic performance."
             delay="delay-300"
@@ -110,7 +132,9 @@ interface FeatureCardProps {
 }
 
 const FeatureCard = ({ icon, title, description, delay }: FeatureCardProps) => (
-  <Card className={`border-border/50 bg-card/60 backdrop-blur-sm transition-all hover:bg-card hover:border-border hover:shadow-md group ${delay}`}>
+  <Card
+    className={`border-border/50 bg-card/60 backdrop-blur-sm transition-all hover:bg-card hover:border-border hover:shadow-md group ${delay}`}
+  >
     <CardHeader>
       <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-300">
         {icon}
