@@ -1,13 +1,20 @@
 from uuid import UUID
 from fastapi import APIRouter, Depends
 from app.dependencies.supabaseClient import get_supabase_client
+from app.dependencies.authDependency import get_current_user
 from app.services.departments import (
-    deleteDepartmentById,
     getAllDepartments,
     getDepartmentById,
+    createNewDepartment,
+    updateDepartmentById,
+    deleteDepartmentById,
 )
+from app.schemas.departments import DepartmentCreate, DepartmentUpdate
 
-router = APIRouter(prefix="/departments", tags=["departments"])
+router = APIRouter(
+    prefix="/departments",
+    tags=["departments"],
+)
 
 
 @router.get("/")
@@ -30,8 +37,39 @@ def getDepartment(dept_id: UUID, db=Depends(get_supabase_client)):
     }
 
 
+@router.post("/")
+def createDepartment(
+    deptData: DepartmentCreate,
+    db=Depends(get_supabase_client),
+    _=Depends(get_current_user),
+):
+    newDepartment = createNewDepartment(deptData, db)
+    return {
+        "success": True,
+        "data": newDepartment,
+        "message": "Department created successfully",
+    }
+
+
+@router.patch("/{dept_id}")
+def updateDepartment(
+    dept_id: UUID,
+    deptData: DepartmentUpdate,
+    db=Depends(get_supabase_client),
+    _=Depends(get_current_user),
+):
+    updatedDepartment = updateDepartmentById(dept_id, deptData, db)
+    return {
+        "success": True,
+        "data": updatedDepartment,
+        "message": "Department updated successfully",
+    }
+
+
 @router.delete("/{dept_id}")
-def deleteDepartment(dept_id: UUID, db=Depends(get_supabase_client)):
+def deleteDepartment(
+    dept_id: UUID, db=Depends(get_supabase_client), _=Depends(get_current_user)
+):
     deletedDepartment = deleteDepartmentById(dept_id, db)
     return {
         "success": True,

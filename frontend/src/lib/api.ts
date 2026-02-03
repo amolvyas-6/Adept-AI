@@ -157,9 +157,8 @@ export const api = {
   },
 
   addToLibrary: async (documentId: string): Promise<void> => {
-    const res = await authFetch("/libraries", {
+    const res = await authFetch(`/libraries/${documentId}`, {
       method: "POST",
-      body: JSON.stringify({ documentId }),
     });
     return handleResponse(res);
   },
