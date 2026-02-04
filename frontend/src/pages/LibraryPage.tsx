@@ -9,8 +9,9 @@ import {
   BookOpen,
   Grid3X3,
   List,
+  MessageSquare,
 } from "lucide-react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { api, type LibraryItem } from "@/lib/api";
@@ -26,9 +27,11 @@ type ViewMode = "grid" | "list";
 
 export function LibraryPage() {
   useOutletContext<LayoutContext>();
+  const navigate = useNavigate();
   const [library, setLibrary] = useState<LibraryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [creatingChatId, setCreatingChatId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
 
   useEffect(() => {
@@ -59,6 +62,18 @@ export function LibraryPage() {
       toast.error(error.message || "Failed to remove document");
     } finally {
       setRemovingId(null);
+    }
+  };
+
+  const handleStartChat = async (documentId: string) => {
+    setCreatingChatId(documentId);
+    try {
+      const chat = await api.createChat(documentId);
+      navigate(`/chats/${chat._id}`);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to create chat");
+    } finally {
+      setCreatingChatId(null);
     }
   };
 
@@ -191,6 +206,20 @@ export function LibraryPage() {
                   <Clock className="size-3" />
                   Saved {formatDate(item.saved_at)}
                 </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleStartChat(item.document_id)}
+                  disabled={creatingChatId === item.document_id}
+                  className="mt-3 w-full gap-2"
+                >
+                  {creatingChatId === item.document_id ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <MessageSquare className="size-4" />
+                  )}
+                  New Chat
+                </Button>
               </CardContent>
             </Card>
           ))}
@@ -226,19 +255,35 @@ export function LibraryPage() {
                       </div>
                     </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={() => handleRemove(item.document_id)}
-                    disabled={removingId === item.document_id}
-                    className="shrink-0 text-muted-foreground hover:text-destructive"
-                  >
-                    {removingId === item.document_id ? (
-                      <Loader2 className="size-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="size-4" />
-                    )}
-                  </Button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleStartChat(item.document_id)}
+                      disabled={creatingChatId === item.document_id}
+                      className="gap-2"
+                    >
+                      {creatingChatId === item.document_id ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        <MessageSquare className="size-4" />
+                      )}
+                      New Chat
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => handleRemove(item.document_id)}
+                      disabled={removingId === item.document_id}
+                      className="text-muted-foreground hover:text-destructive"
+                    >
+                      {removingId === item.document_id ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="size-4" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>

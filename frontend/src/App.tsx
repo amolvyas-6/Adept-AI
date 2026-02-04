@@ -4,6 +4,7 @@ import { AuthPage } from "./pages/AuthPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { DocumentsPage } from "./pages/DocumentsPage";
 import { LibraryPage } from "./pages/LibraryPage";
+import { ChatsPage } from "./pages/ChatsPage";
 import ProfilePage from "./pages/ProfilePage";
 import { ThemeProvider } from "./components/theme-provider";
 import { AppLayout } from "./components/app-layout";
@@ -23,6 +24,7 @@ export function App() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/documents" element={<DocumentsPage />} />
             <Route path="/library" element={<LibraryPage />} />
+            <Route path="/chats/:id" element={<ChatsPage />} />
             <Route path="/profile" element={<ProfilePage />} />
           </Route>
         </Routes>

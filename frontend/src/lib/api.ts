@@ -46,6 +46,7 @@ export interface Document {
   user_id: string;
   profiles?: { full_name: string };
   courses?: { name: string; code: string };
+  url?: string;
 }
 
 export interface LibraryItem {
@@ -57,6 +58,25 @@ export interface LibraryItem {
   uploader?: string;
   course_code: string;
   course_name: string;
+}
+
+export interface ChatMessage {
+  content: string;
+  role: "user" | "assistant";
+}
+
+export interface Chat {
+  _id: string;
+  user_id: string;
+  title: string;
+  document_ids: string[];
+  messages: ChatMessage[];
+}
+
+export interface ChatListItem {
+  _id: string;
+  title: string;
+  document_ids: string[];
 }
 
 export interface Profile {
@@ -193,6 +213,62 @@ export const api = {
   ): Promise<{ id: string; name: string; code: string }[]> => {
     const params = universityId ? `?universityId=${universityId}` : "";
     const res = await authFetch(`/courses${params}`);
+    return handleResponse(res);
+  },
+
+  // Protected endpoints - Chats
+  getChats: async (): Promise<ChatListItem[]> => {
+    const res = await authFetch("/chats");
+    return handleResponse(res);
+  },
+
+  getChat: async (chatId: string): Promise<Chat> => {
+    const res = await authFetch(`/chats/${chatId}`);
+    return handleResponse(res);
+  },
+
+  createChat: async (documentId: string): Promise<Chat> => {
+    const res = await authFetch(`/chats?documentId=${documentId}`, {
+      method: "POST",
+    });
+    return handleResponse(res);
+  },
+
+  addMessageToChat: async (
+    chatId: string,
+    message: { content: string; role: string }
+  ): Promise<ChatMessage> => {
+    const res = await authFetch(`/chats/${chatId}/messages`, {
+      method: "POST",
+      body: JSON.stringify(message),
+    });
+    return handleResponse(res);
+  },
+
+  addDocumentToChat: async (
+    chatId: string,
+    documentId: string
+  ): Promise<void> => {
+    const res = await authFetch(`/chats/${chatId}/documents/${documentId}`, {
+      method: "POST",
+    });
+    return handleResponse(res);
+  },
+
+  removeDocumentFromChat: async (
+    chatId: string,
+    documentId: string
+  ): Promise<void> => {
+    const res = await authFetch(`/chats/${chatId}/documents/${documentId}`, {
+      method: "DELETE",
+    });
+    return handleResponse(res);
+  },
+
+  deleteChat: async (chatId: string): Promise<void> => {
+    const res = await authFetch(`/chats/${chatId}`, {
+      method: "DELETE",
+    });
     return handleResponse(res);
   },
 
