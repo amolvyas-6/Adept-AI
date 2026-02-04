@@ -9,6 +9,7 @@ from app.services.documents import (
     deleteDocumentById,
     getAllDocuments,
     getDocumentById,
+    getDocumentFileURL,
     uploadNewDocument,
 )
 
@@ -36,11 +37,16 @@ def listDocuments(
 def getDocument(
     documentId: UUID,
     db=Depends(get_supabase_client),
+    s3=Depends(get_s3_client),
 ):
     document = getDocumentById(documentId, db)
+    url = getDocumentFileURL(documentId, s3)
     return {
         "success": True,
-        "data": document,
+        "data": {
+            "document": document,
+            "url": url,
+        },
         "message": "Document retrieved successfully",
     }
 

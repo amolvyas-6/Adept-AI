@@ -12,6 +12,7 @@ from app.routers import (
     auth,
     library,
     documents,
+    chats,
 )
 import os
 from fastapi.middleware.cors import CORSMiddleware
@@ -34,6 +35,7 @@ app.include_router(profiles.router)
 app.include_router(auth.router)
 app.include_router(library.router)
 app.include_router(documents.router)
+app.include_router(chats.router)
 
 
 @app.exception_handler(HTTPException)

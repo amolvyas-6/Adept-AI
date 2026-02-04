@@ -114,8 +114,25 @@ def deleteDocumentById(
     if len(response.data) == 0:
         raise HTTPException(status_code=404, detail="Document not found")
 
-    key = response.data[0].id
+    key = f"documents/{documentId}"
     bucketName = os.getenv("CLOUDFLARE_R2_BUCKET_NAME")
     s3.delete_object(Bucket=bucketName, Key=key)
 
     return response.data[0]
+
+
+def getDocumentFileURL(
+    documentId: UUID,
+    s3,
+):
+    bucketName = os.getenv("CLOUDFLARE_R2_BUCKET_NAME")
+    key = f"documents/{documentId}.pdf"
+    url = s3.generate_presigned_url(
+        ClientMethod="get_object",
+        Params={
+            "Bucket": bucketName,
+            "Key": key,
+        },
+        ExpiresIn=3600,
+    )
+    return url
