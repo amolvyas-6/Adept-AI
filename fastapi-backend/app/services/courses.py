@@ -1,7 +1,7 @@
 from uuid import UUID
-from fastapi import HTTPException
-from app.schemas.courses import CourseCreate, CourseUpdate, CourseDataLink
 
+from app.schemas.courses import CourseCreate, CourseDataLink, CourseUpdate
+from fastapi import HTTPException
 from supabase import Client
 
 

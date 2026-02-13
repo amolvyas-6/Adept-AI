@@ -1,9 +1,10 @@
-from supabase import Client
-from pathlib import Path
-from uuid import UUID
-from fastapi import HTTPException, UploadFile
 import os
 import shutil
+from pathlib import Path
+from uuid import UUID
+
+from fastapi import HTTPException, UploadFile
+from supabase import Client
 
 
 def getAllDocuments(

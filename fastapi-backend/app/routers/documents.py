@@ -1,10 +1,10 @@
-from uuid import UUID
-from pathlib import Path
 import shutil
-from fastapi import APIRouter, Depends, File, Form, UploadFile
+from pathlib import Path
+from uuid import UUID
+
 from app.dependencies.authDependency import get_current_user
-from app.dependencies.supabaseClient import get_supabase_client
 from app.dependencies.s3Client import get_s3_client
+from app.dependencies.supabaseClient import get_supabase_client
 from app.services.documents import (
     deleteDocumentById,
     getAllDocuments,
@@ -12,6 +12,7 @@ from app.services.documents import (
     getDocumentFileURL,
     uploadNewDocument,
 )
+from fastapi import APIRouter, Depends, File, Form, UploadFile
 
 router = APIRouter(
     prefix="/documents", tags=["documents"], dependencies=[Depends(get_current_user)]

@@ -1,8 +1,9 @@
-from fastapi import HTTPException
-from pymongo.collection import Collection
 from uuid import UUID
+
 from app.schemas.chats import ChatBase, MessageBase
 from bson import ObjectId
+from fastapi import HTTPException
+from pymongo.collection import Collection
 from supabase import Client
 
 

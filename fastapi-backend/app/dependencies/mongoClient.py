@@ -1,5 +1,6 @@
-from pymongo import MongoClient
 import os
+
+from pymongo import MongoClient
 
 MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
 client: MongoClient = MongoClient(MONGODB_URI, uuidRepresentation="standard")

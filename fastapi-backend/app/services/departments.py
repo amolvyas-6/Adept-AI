@@ -1,7 +1,7 @@
 from uuid import UUID
-from fastapi import HTTPException
-from app.schemas.departments import DepartmentCreate, DepartmentUpdate
 
+from app.schemas.departments import DepartmentCreate, DepartmentUpdate
+from fastapi import HTTPException
 from supabase import Client
 
 

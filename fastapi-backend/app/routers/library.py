@@ -1,12 +1,13 @@
-from fastapi import APIRouter, Depends
+from uuid import UUID
+
 from app.dependencies.authDependency import get_current_user
 from app.dependencies.supabaseClient import get_supabase_client
-from uuid import UUID
 from app.services.library import (
-    getLibraryByUserId,
     addDocumentToLibrary,
     deleteDocumentFromLibrary,
+    getLibraryByUserId,
 )
+from fastapi import APIRouter, Depends
 
 router = APIRouter(
     prefix="/libraries",

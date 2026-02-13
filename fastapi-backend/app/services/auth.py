@@ -1,6 +1,6 @@
+from app.schemas.auth import RegisterUser
 from fastapi import HTTPException
 from supabase import Client
-from app.schemas.auth import RegisterUser
 
 
 def registerNewUser(userData: RegisterUser, db: Client):

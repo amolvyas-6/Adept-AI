@@ -1,15 +1,16 @@
-from fastapi import APIRouter, Depends
-from app.dependencies.supabaseClient import get_supabase_client
-from app.dependencies.authDependency import get_current_user
 from uuid import UUID
+
+from app.dependencies.authDependency import get_current_user
+from app.dependencies.supabaseClient import get_supabase_client
+from app.schemas.university import UniversityCreate, UniversityUpdate
 from app.services.university import (
+    createNewUniversity,
+    deleteUniversityById,
     getAllUniversities,
     getUniversityById,
-    createNewUniversity,
     updateUniversityById,
-    deleteUniversityById,
 )
-from app.schemas.university import UniversityCreate, UniversityUpdate
+from fastapi import APIRouter, Depends
 
 router = APIRouter(prefix="/universities", tags=["universities"])
 

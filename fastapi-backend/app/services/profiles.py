@@ -1,7 +1,8 @@
-from supabase import Client
 from uuid import UUID
-from fastapi import HTTPException
+
 from app.schemas.profiles import ProfileUpdate
+from fastapi import HTTPException
+from supabase import Client
 
 
 def getProfileById(userId: UUID, loggedInUser, db: Client):

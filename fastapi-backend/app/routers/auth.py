@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends
-from app.schemas.auth import RegisterUser
 from app.dependencies.supabaseClient import get_supabase_client
+from app.schemas.auth import RegisterUser
 from app.services.auth import registerNewUser, removeUser
+from fastapi import APIRouter, Depends
 
 router = APIRouter(
     prefix="/auth",

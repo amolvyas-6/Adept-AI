@@ -1,19 +1,19 @@
-from fastapi import APIRouter, Depends
+from uuid import UUID
+
 from app.dependencies.authDependency import get_current_user
 from app.dependencies.mongoClient import get_chat_collection
 from app.dependencies.supabaseClient import get_supabase_client
+from app.schemas.chats import MessageBase
 from app.services.chats import (
     addDocumentToChat,
     addMessageToChat,
     createNewChat,
+    delelteDocumentFromChat,
     deleteChatById,
     getChatById,
     getUserChats,
-    delelteDocumentFromChat,
 )
-from app.schemas.chats import MessageBase
-from uuid import UUID
-
+from fastapi import APIRouter, Depends
 
 router = APIRouter(
     prefix="/chats",

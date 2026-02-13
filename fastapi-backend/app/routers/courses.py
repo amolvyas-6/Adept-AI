@@ -1,17 +1,17 @@
-from fastapi import APIRouter, Depends
-from app.dependencies.supabaseClient import get_supabase_client
-from app.dependencies.authDependency import get_current_user
 from uuid import UUID
+
+from app.dependencies.authDependency import get_current_user
+from app.dependencies.supabaseClient import get_supabase_client
+from app.schemas.courses import CourseCreate, CourseDataLink, CourseUpdate
 from app.services.courses import (
+    createNewCourse,
+    deleteCourseById,
     getAllCourses,
     getCourseById,
-    createNewCourse,
-    updateCourseById,
-    deleteCourseById,
     linkCourseToDepartment,
+    updateCourseById,
 )
-from app.schemas.courses import CourseCreate, CourseUpdate, CourseDataLink
-
+from fastapi import APIRouter, Depends
 
 router = APIRouter(
     prefix="/courses", tags=["courses"], dependencies=[Depends(get_current_user)]

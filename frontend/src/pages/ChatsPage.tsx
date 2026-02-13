@@ -255,7 +255,7 @@ export function ChatsPage() {
                   </div>
                 }
                 error={
-                  <div className="text-center py-12 text-muted-foreground w-[500px]">
+                  <div className="text-center py-12 text-muted-foreground w-125">
                     <p>Failed to load PDF</p>
                   </div>
                 }

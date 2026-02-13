@@ -1,10 +1,11 @@
-from pydantic import BaseModel, Field
-from uuid import UUID
 from datetime import datetime, timezone
+from uuid import UUID
+
+from pydantic import BaseModel, Field
 
 
 class MessageBase(BaseModel):
-    content: str
+    content: str | list[dict]
     role: str
 
 

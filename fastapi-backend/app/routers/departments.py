@@ -1,15 +1,16 @@
 from uuid import UUID
-from fastapi import APIRouter, Depends
-from app.dependencies.supabaseClient import get_supabase_client
+
 from app.dependencies.authDependency import get_current_user
+from app.dependencies.supabaseClient import get_supabase_client
+from app.schemas.departments import DepartmentCreate, DepartmentUpdate
 from app.services.departments import (
+    createNewDepartment,
+    deleteDepartmentById,
     getAllDepartments,
     getDepartmentById,
-    createNewDepartment,
     updateDepartmentById,
-    deleteDepartmentById,
 )
-from app.schemas.departments import DepartmentCreate, DepartmentUpdate
+from fastapi import APIRouter, Depends
 
 router = APIRouter(
     prefix="/departments",
