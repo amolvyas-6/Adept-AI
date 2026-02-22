@@ -1,5 +1,6 @@
 from uuid import UUID
 
+from app.dependencies.aiDependency import getLLM
 from app.dependencies.authDependency import get_current_user
 from app.dependencies.mongoClient import get_chat_collection
 from app.dependencies.supabaseClient import get_supabase_client
@@ -14,6 +15,7 @@ from app.services.chats import (
     getUserChats,
 )
 from fastapi import APIRouter, Depends
+from fastapi.responses import StreamingResponse
 
 router = APIRouter(
     prefix="/chats",
@@ -62,19 +64,18 @@ def createChat(
     }
 
 
-@router.post("/{chatId}/messages")
+@router.post("/{chatId}/messages/stream")
 def addMessage(
     message: MessageBase,
     chatId: str,
+    llm=Depends(getLLM),
     loggedInUser=Depends(get_current_user),
     chatCollection=Depends(get_chat_collection),
 ):
-    addedMessage = addMessageToChat(chatId, message, loggedInUser, chatCollection)
-    return {
-        "success": True,
-        "data": addedMessage,
-        "message": "Message added to chat successfully",
-    }
+    return StreamingResponse(
+        content=addMessageToChat(chatId, message, llm, loggedInUser, chatCollection),
+        media_type="text/event-stream",
+    )
 
 
 @router.post("/{chatId}/documents/{documentId}")

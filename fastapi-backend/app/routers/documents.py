@@ -2,6 +2,7 @@ import shutil
 from pathlib import Path
 from uuid import UUID
 
+from app.dependencies.aiDependency import getRAG
 from app.dependencies.authDependency import get_current_user
 from app.dependencies.s3Client import get_s3_client
 from app.dependencies.supabaseClient import get_supabase_client
@@ -59,11 +60,14 @@ async def createDocument(
     unit: int = Form(..., ge=0, le=5),
     courseId: UUID = Form(...),
     current_user=Depends(get_current_user),
+    ragUtility=Depends(getRAG),
     db=Depends(get_supabase_client),
     s3=Depends(get_s3_client),
 ):
 
-    document = uploadNewDocument(title, unit, courseId, document, current_user, db, s3)
+    document = uploadNewDocument(
+        title, unit, courseId, document, current_user, ragUtility, db, s3
+    )
     return {
         "success": True,
         "data": document,
@@ -74,11 +78,12 @@ async def createDocument(
 @router.delete("/{documentId}")
 def deleteDocument(
     documentId: UUID,
+    ragUtility=Depends(getRAG),
     db=Depends(get_supabase_client),
     s3=Depends(get_s3_client),
 ):
 
-    document = deleteDocumentById(documentId, db, s3)
+    document = deleteDocumentById(documentId, ragUtility, db, s3)
     return {
         "success": True,
         "data": document,

@@ -1,3 +1,4 @@
+import { fetchEventSource } from "@microsoft/fetch-event-source";
 import { supabase } from "./supabase";
 
 const BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
@@ -234,15 +235,47 @@ export const api = {
     return handleResponse(res);
   },
 
-  addMessageToChat: async (
+  streamMessage: async (
     chatId: string,
-    message: { content: string; role: string }
-  ): Promise<ChatMessage> => {
-    const res = await authFetch(`/chats/${chatId}/messages`, {
+    message: { content: string; role: string },
+    onChunk: (content: string) => void,
+    onMetadata?: (metadata: string) => void,
+    onDone?: () => void,
+    onError?: (error: Error) => void
+  ): Promise<void> => {
+    const token = await getAuthToken();
+    if (!token) {
+      throw new Error("Not authenticated");
+    }
+
+    await fetchEventSource(`${BASE_URL}/chats/${chatId}/messages/stream`, {
       method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify(message),
+      onmessage(ev) {
+        try {
+          const parsed = JSON.parse(ev.data);
+          if (parsed.content) {
+            onChunk(parsed.content);
+          } else if (parsed.metadata) {
+            onMetadata?.(parsed.metadata);
+          }
+        } catch {
+          // ignore unparseable chunks
+        }
+      },
+      onclose() {
+        onDone?.();
+      },
+      onerror(err) {
+        onError?.(err instanceof Error ? err : new Error(String(err)));
+        throw err; // rethrow to stop reconnecting
+      },
+      openWhenHidden: true,
     });
-    return handleResponse(res);
   },
 
   addDocumentToChat: async (

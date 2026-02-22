@@ -23,7 +23,11 @@ import {
   ConversationEmptyState,
   ConversationScrollButton,
 } from "@/components/ai-elements/conversation";
-import { Message, MessageContent } from "@/components/ai-elements/message";
+import {
+  Message,
+  MessageContent,
+  MessageResponse,
+} from "@/components/ai-elements/message";
 import {
   PromptInput,
   PromptInputTextarea,
@@ -104,20 +108,46 @@ export function ChatsPage() {
     setMessages((prev) => [...prev, userMessage]);
     setSending(true);
 
+    // Add an empty assistant message that will be streamed into
+    const assistantMessage: ChatMessage = { role: "assistant", content: "" };
+    setMessages((prev) => [...prev, assistantMessage]);
+
     try {
-      // Send message to backend and get AI response
-      const aiResponse = await api.addMessageToChat(chat._id, {
-        content,
-        role: "user",
-      });
-      setMessages((prev) => [...prev, aiResponse]);
+      await api.streamMessage(
+        chat._id,
+        { content, role: "user" },
+        (chunk) => {
+          // Append each streamed token to the last (assistant) message
+          setMessages((prev) => {
+            const updated = [...prev];
+            const last = updated[updated.length - 1];
+            updated[updated.length - 1] = {
+              ...last,
+              content: last.content + chunk,
+            };
+            return updated;
+          });
+        },
+        undefined, // onMetadata — not displayed for now
+        () => {
+          setSending(false);
+        },
+        (error) => {
+          console.error("Failed to send message:", error);
+          toast.error("Failed to send message");
+          // Remove the optimistic user + empty assistant messages on error
+          setMessages((prev) => prev.slice(0, -2));
+          setSending(false);
+        }
+      );
     } catch (error) {
-      console.error("Failed to send message:", error);
-      toast.error("Failed to send message");
-      // Remove the optimistic user message on error
-      setMessages((prev) => prev.slice(0, -1));
-    } finally {
-      setSending(false);
+      console.error("Stream error:", error);
+      // Safety net in case the promise itself rejects
+      if (sending) {
+        toast.error("Failed to send message");
+        setMessages((prev) => prev.slice(0, -2));
+        setSending(false);
+      }
     }
   };
 
@@ -164,11 +194,17 @@ export function ChatsPage() {
                   description="Ask questions about this document and get AI-powered answers."
                 />
               ) : (
-                messages.map((message) => (
-                  <Message from={message.role}>
-                    <MessageContent>{message.content}</MessageContent>
-                  </Message>
-                ))
+                messages.map((message) =>
+                  message.role === "user" ? (
+                    <Message from={message.role}>
+                      <MessageContent>{message.content}</MessageContent>
+                    </Message>
+                  ) : (
+                    <Message from={message.role}>
+                      <MessageResponse>{message.content}</MessageResponse>
+                    </Message>
+                  )
+                )
               )}
             </ConversationContent>
             <ConversationScrollButton />

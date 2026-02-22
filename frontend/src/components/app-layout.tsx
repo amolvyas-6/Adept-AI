@@ -36,6 +36,11 @@ const pageTitles: Record<string, string> = {
   "/profile": "Profile",
 };
 
+function getPageTitle(pathname: string): string {
+  if (pathname.startsWith("/chats/")) return "Chat";
+  return pageTitles[pathname] || "Dashboard";
+}
+
 export function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -43,7 +48,7 @@ export function AppLayout() {
   const [user, setUser] = useState<UserInfo | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
 
-  const currentPageTitle = pageTitles[location.pathname] || "Dashboard";
+  const currentPageTitle = getPageTitle(location.pathname);
 
   useEffect(() => {
     const checkAuth = async () => {

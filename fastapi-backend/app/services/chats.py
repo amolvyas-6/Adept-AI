@@ -1,3 +1,4 @@
+import json
 from uuid import UUID
 
 from app.schemas.chats import ChatBase, MessageBase
@@ -59,7 +60,7 @@ def updateChat(chatId, message: MessageBase, chatCollection: Collection):
 
 
 def addMessageToChat(
-    chatId: str, message: MessageBase, loggedInUser, chatCollection: Collection
+    chatId: str, userMessage: MessageBase, llm, loggedInUser, chatCollection: Collection
 ):
     userId = UUID(loggedInUser.id)
     query = {"_id": ObjectId(chatId)}
@@ -67,19 +68,32 @@ def addMessageToChat(
     if chat:
         if chat["user_id"] != userId:
             raise HTTPException(status_code=403, detail="Access denied to this chat")
-        updateChat(chatId, message, chatCollection)
+
+        updateChat(chatId, userMessage, chatCollection)
+        aiResponse = MessageBase(content="", role="assistant")
+        metadata = MessageBase(content="", role="metadata")
+        for chunk in llm.query(userMessage.content, chat["document_ids"]):
+            if "content" in chunk:
+                aiResponse.content += chunk["content"]
+                yield f"data: {json.dumps({'content': chunk['content']})}\n\n"
+            elif "metadata" in chunk:
+                metadata.content = chunk["metadata"]
+                yield f"data: {json.dumps({'metadata': chunk['metadata']})}\n\n"
+
+        updateChat(chatId, aiResponse, chatCollection)
+        if len(metadata.content) > 0:
+            updateChat(chatId, metadata, chatCollection)
+
     else:
         raise HTTPException(status_code=404, detail="Chat not found")
 
-    aiResponse = MessageBase(
-        content="This is a placeholder response from the AI.", role="assistant"
-    )
-    updateChat(chatId, aiResponse, chatCollection)
-    return aiResponse
-
 
 def addDocumentToChat(
-    chatId: str, documentId: UUID, loggedInUser, chatCollection: Collection, db: Client
+    chatId: str,
+    documentId: UUID,
+    loggedInUser,
+    chatCollection: Collection,
+    db: Client,
 ):
     userId = UUID(loggedInUser.id)
     query = {"_id": ObjectId(chatId)}

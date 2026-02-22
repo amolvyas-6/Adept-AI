@@ -1,8 +1,9 @@
 import os
 import shutil
 from pathlib import Path
-from uuid import UUID
+from uuid import UUID, uuid4
 
+from app.utils.rag import RAGUtility
 from fastapi import HTTPException, UploadFile
 from supabase import Client
 
@@ -59,6 +60,7 @@ def uploadNewDocument(
     courseId: UUID,
     file: UploadFile,
     currentUser,
+    ragUtility: RAGUtility,
     db: Client,
     s3,
 ):
@@ -67,10 +69,20 @@ def uploadNewDocument(
         raise HTTPException(status_code=400, detail="Only PDF files are allowed")
 
     temp_dir = Path(__file__).parent.parent / "temp"
-    temp_file_path = temp_dir / file.filename
+    document_id = str(uuid4())
+    temp_file_path = temp_dir / f"{document_id}.pdf"
     try:
         with open(temp_file_path, "wb") as f:
             shutil.copyfileobj(file.file, f)
+
+        bucketName = os.getenv("CLOUDFLARE_R2_BUCKET_NAME")
+        key = f"documents/{document_id}"
+        s3.upload_file(
+            Filename=str(temp_file_path),
+            Bucket=bucketName,
+            Key=key,
+        )
+        ragUtility.insert_to_collection(temp_file_path, docId=UUID(document_id))
 
         userId = currentUser.id
         if not title:
@@ -78,6 +90,7 @@ def uploadNewDocument(
 
         query = db.table("documents").insert(
             {
+                "id": str(document_id),
                 "title": title,
                 "unit": unit,
                 "course_id": str(courseId),
@@ -90,14 +103,6 @@ def uploadNewDocument(
                 status_code=500, detail="Failed to create document record"
             )
 
-        documentId = response.data[0]["id"]
-        bucketName = os.getenv("CLOUDFLARE_R2_BUCKET_NAME")
-        key = f"documents/{documentId}"
-        s3.upload_file(
-            Filename=str(temp_file_path),
-            Bucket=bucketName,
-            Key=key,
-        )
         return response.data[0]
 
     finally:
@@ -107,17 +112,20 @@ def uploadNewDocument(
 
 def deleteDocumentById(
     documentId: UUID,
+    ragUtility: RAGUtility,
     db: Client,
     s3,
 ):
+    key = f"documents/{documentId}"
+    bucketName = os.getenv("CLOUDFLARE_R2_BUCKET_NAME")
+    s3.delete_object(Bucket=bucketName, Key=key)
+
+    ragUtility.delete_from_collection(documentId)
+
     query = db.table("documents").delete().eq("id", str(documentId))
     response = query.execute()
     if len(response.data) == 0:
         raise HTTPException(status_code=404, detail="Document not found")
-
-    key = f"documents/{documentId}"
-    bucketName = os.getenv("CLOUDFLARE_R2_BUCKET_NAME")
-    s3.delete_object(Bucket=bucketName, Key=key)
 
     return response.data[0]
 
@@ -127,7 +135,7 @@ def getDocumentFileURL(
     s3,
 ):
     bucketName = os.getenv("CLOUDFLARE_R2_BUCKET_NAME")
-    key = f"documents/{documentId}.pdf"
+    key = f"documents/{documentId}"
     url = s3.generate_presigned_url(
         ClientMethod="get_object",
         Params={

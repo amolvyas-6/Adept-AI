@@ -6,9 +6,12 @@ import {
   LayoutDashboard,
   Library,
   LogOut,
+  MessageSquare,
+  MoreHorizontal,
+  Trash2,
   User,
 } from "lucide-react";
-import { api } from "@/lib/api";
+import { api, type ChatListItem } from "@/lib/api";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -16,8 +19,10 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
+  SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
@@ -60,6 +65,38 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 export function AppSidebar({ user, profile, ...props }: AppSidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
+  const [chats, setChats] = React.useState<ChatListItem[]>([]);
+  const [chatsLoading, setChatsLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    loadChats();
+  }, []);
+
+  const loadChats = async () => {
+    try {
+      const data = await api.getChats();
+      setChats(data);
+    } catch {
+      // silently fail — user may not have chats yet
+    } finally {
+      setChatsLoading(false);
+    }
+  };
+
+  const handleDeleteChat = async (chatId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await api.deleteChat(chatId);
+      setChats((prev) => prev.filter((c) => c._id !== chatId));
+      toast.success("Chat deleted");
+      // If currently viewing the deleted chat, navigate away
+      if (location.pathname === `/chats/${chatId}`) {
+        navigate("/dashboard");
+      }
+    } catch {
+      toast.error("Failed to delete chat");
+    }
+  };
 
   const handleLogout = async () => {
     const { error } = await api.logout();
@@ -121,6 +158,51 @@ export function AppSidebar({ user, profile, ...props }: AppSidebarProps) {
                 </SidebarMenuItem>
               );
             })}
+          </SidebarMenu>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Chats</SidebarGroupLabel>
+          <SidebarMenu className="gap-1">
+            {chatsLoading ? (
+              <p className="px-2 py-1.5 text-xs text-muted-foreground">
+                Loading...
+              </p>
+            ) : chats.length === 0 ? (
+              <p className="px-2 py-1.5 text-xs text-muted-foreground">
+                No chats yet
+              </p>
+            ) : (
+              chats.map((chat) => {
+                const isActive = location.pathname === `/chats/${chat._id}`;
+                return (
+                  <SidebarMenuItem key={chat._id}>
+                    <SidebarMenuButton asChild isActive={isActive}>
+                      <Link to={`/chats/${chat._id}`}>
+                        <MessageSquare className="size-4" />
+                        <span className="truncate">{chat.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <SidebarMenuAction showOnHover>
+                          <MoreHorizontal className="size-4" />
+                        </SidebarMenuAction>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent side="right" align="start">
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive cursor-pointer"
+                          onClick={(e) => handleDeleteChat(chat._id, e)}
+                        >
+                          <Trash2 className="mr-2 size-4" />
+                          Delete chat
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </SidebarMenuItem>
+                );
+              })
+            )}
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
