@@ -61,9 +61,18 @@ export interface LibraryItem {
   course_name: string;
 }
 
+export interface SourceMetadata {
+  source: string;
+  page: number;
+  type: "text" | "image";
+  docId: string;
+  image_url?: string;
+}
+
 export interface ChatMessage {
   content: string;
   role: "user" | "assistant";
+  sources?: SourceMetadata[];
 }
 
 export interface Chat {
@@ -239,7 +248,7 @@ export const api = {
     chatId: string,
     message: { content: string; role: string },
     onChunk: (content: string) => void,
-    onMetadata?: (metadata: string) => void,
+    onMetadata?: (metadata: SourceMetadata[]) => void,
     onDone?: () => void,
     onError?: (error: Error) => void
   ): Promise<void> => {

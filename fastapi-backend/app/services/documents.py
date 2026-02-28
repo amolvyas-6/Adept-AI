@@ -75,12 +75,13 @@ def uploadNewDocument(
         with open(temp_file_path, "wb") as f:
             shutil.copyfileobj(file.file, f)
 
-        bucketName = os.getenv("CLOUDFLARE_R2_BUCKET_NAME")
+        bucketName = os.getenv("SUPABASE_S3_BUCKET_NAME")
         key = f"documents/{document_id}"
         s3.upload_file(
             Filename=str(temp_file_path),
             Bucket=bucketName,
             Key=key,
+            ExtraArgs={"ContentType": "application/pdf"},
         )
         ragUtility.insert_to_collection(temp_file_path, docId=UUID(document_id))
 
@@ -117,8 +118,15 @@ def deleteDocumentById(
     s3,
 ):
     key = f"documents/{documentId}"
-    bucketName = os.getenv("CLOUDFLARE_R2_BUCKET_NAME")
+    bucketName = os.getenv("SUPABASE_S3_BUCKET_NAME")
     s3.delete_object(Bucket=bucketName, Key=key)
+
+    document_images = s3.list_objects_v2(
+        Bucket=bucketName, Prefix=f"images/{documentId}/"
+    )
+    if "Contents" in document_images:
+        for image in document_images["Contents"]:
+            s3.delete_object(Bucket=bucketName, Key=image["Key"])
 
     ragUtility.delete_from_collection(documentId)
 
@@ -134,7 +142,7 @@ def getDocumentFileURL(
     documentId: UUID,
     s3,
 ):
-    bucketName = os.getenv("CLOUDFLARE_R2_BUCKET_NAME")
+    bucketName = os.getenv("SUPABASE_S3_BUCKET_NAME")
     key = f"documents/{documentId}"
     url = s3.generate_presigned_url(
         ClientMethod="get_object",

@@ -11,6 +11,8 @@ import {
   X,
   FileText,
   BookOpen,
+  ImageIcon,
+  FileTextIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -36,6 +38,7 @@ import {
   type Chat,
   type ChatMessage,
   type LibraryItem,
+  type SourceMetadata,
 } from "@/lib/api";
 import { toast } from "sonner";
 import {
@@ -56,6 +59,11 @@ import {
   type PromptInputMessage,
 } from "@/components/ai-elements/prompt-input";
 import { Suggestion, Suggestions } from "@/components/ai-elements/suggestion";
+import {
+  Sources,
+  SourcesTrigger,
+  SourcesContent,
+} from "@/components/ai-elements/sources";
 
 // Set up PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -116,14 +124,43 @@ export function ChatsPage() {
       // Fetch the existing chat
       const chatData = await api.getChat(id);
       setChat(chatData);
-      setMessages(chatData.messages || []);
 
       // Fetch all documents associated with this chat
       const docPromises = chatData.document_ids.map((docId) =>
         api.getDocument(docId)
       );
       const docs = await Promise.all(docPromises);
-      setDocuments(docs);
+      // Backend returns { document: {...}, url: "..." } — flatten into a single object
+      const flatDocs = docs.map((d: any) => ({
+        ...d.document,
+        url: d.url,
+      }));
+      setDocuments(flatDocs);
+
+      // Process messages: merge metadata-role messages into preceding assistant messages
+      const rawMessages = (chatData.messages || []) as Array<{
+        content: string | object[];
+        role: string;
+      }>;
+      const processedMessages: ChatMessage[] = [];
+      for (const msg of rawMessages) {
+        if (msg.role === "metadata") {
+          const lastAssistant = [...processedMessages]
+            .reverse()
+            .find((m) => m.role === "assistant");
+          if (lastAssistant) {
+            lastAssistant.sources = Array.isArray(msg.content)
+              ? (msg.content as unknown as SourceMetadata[])
+              : [];
+          }
+        } else {
+          processedMessages.push({
+            content: typeof msg.content === "string" ? msg.content : "",
+            role: msg.role as "user" | "assistant",
+          });
+        }
+      }
+      setMessages(processedMessages);
     } catch (error) {
       console.error("Failed to load chat:", error);
       toast.error("Failed to load chat");
@@ -256,7 +293,25 @@ export function ChatsPage() {
             return updated;
           });
         },
-        undefined, // onMetadata — not displayed for now
+        (metadata: SourceMetadata[]) => {
+          // Deduplicate sources by docId + page
+          const seen = new Set<string>();
+          const unique = metadata.filter((m) => {
+            const key = `${m.docId}-${m.page}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
+          setMessages((prev) => {
+            const updated = [...prev];
+            const last = updated[updated.length - 1];
+            updated[updated.length - 1] = {
+              ...last,
+              sources: unique,
+            };
+            return updated;
+          });
+        },
         () => {
           setSending(false);
         },
@@ -289,6 +344,19 @@ export function ChatsPage() {
     sendMessage(suggestion);
   };
 
+  const handleSourceClick = (source: SourceMetadata) => {
+    if (!source.docId) return;
+    const docIndex = documents.findIndex((doc) => doc.id === source.docId);
+    if (docIndex !== -1) {
+      if (docIndex !== currentDocIndex) {
+        setCurrentDocIndex(docIndex);
+        setNumPages(0);
+      }
+      // pymupdf pages are 0-indexed, react-pdf is 1-indexed
+      setPageNumber(source.page + 1);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
@@ -298,7 +366,7 @@ export function ChatsPage() {
   }
 
   return (
-    <div className="flex-1 h-[calc(100vh-5rem)] flex gap-4 animate-fade-in-up overflow-hidden">
+    <div className="flex-1 min-h-0 flex gap-4 animate-fade-in-up overflow-hidden">
       {/* Left side - Chat Interface — exactly 50% */}
       <div className="w-1/2 flex flex-col min-w-0 overflow-hidden">
         <Card className="flex-1 flex flex-col border-border/50 bg-card/60 backdrop-blur-sm overflow-hidden py-4">
@@ -322,14 +390,42 @@ export function ChatsPage() {
                   description="Ask questions about this document and get AI-powered answers."
                 />
               ) : (
-                messages.map((message) =>
+                messages.map((message, index) =>
                   message.role === "user" ? (
-                    <Message from={message.role}>
+                    <Message key={index} from={message.role}>
                       <MessageContent>{message.content}</MessageContent>
                     </Message>
                   ) : (
-                    <Message from={message.role}>
+                    <Message key={index} from={message.role}>
                       <MessageResponse>{message.content}</MessageResponse>
+                      {message.sources && message.sources.length > 0 && (
+                        <Sources>
+                          <SourcesTrigger count={message.sources.length} />
+                          <SourcesContent>
+                            {message.sources.map((source, idx) => (
+                              <button
+                                key={idx}
+                                type="button"
+                                onClick={() => handleSourceClick(source)}
+                                className="flex items-center gap-2 cursor-pointer text-xs font-medium hover:text-indigo-500 transition-colors text-left"
+                              >
+                                {source.type === "image" ? (
+                                  <ImageIcon className="size-3.5 text-amber-500 shrink-0" />
+                                ) : (
+                                  <FileTextIcon className="size-3.5 text-blue-500 shrink-0" />
+                                )}
+                                <span>{source.source}</span>
+                                <Badge
+                                  variant="outline"
+                                  className="text-[10px] px-1.5 py-0"
+                                >
+                                  p.{source.page + 1}
+                                </Badge>
+                              </button>
+                            ))}
+                          </SourcesContent>
+                        </Sources>
+                      )}
                     </Message>
                   )
                 )
@@ -424,9 +520,7 @@ export function ChatsPage() {
                           <Button
                             variant="outline"
                             size="icon-sm"
-                            disabled={
-                              (chat?.document_ids.length ?? 0) >= 5
-                            }
+                            disabled={(chat?.document_ids.length ?? 0) >= 5}
                           >
                             <Plus className="size-4" />
                           </Button>
@@ -444,8 +538,8 @@ export function ChatsPage() {
                     <DialogHeader>
                       <DialogTitle>Add Document to Chat</DialogTitle>
                       <DialogDescription>
-                        Select a document from your library to add to this
-                        chat. You can have up to 5 documents per chat.
+                        Select a document from your library to add to this chat.
+                        You can have up to 5 documents per chat.
                       </DialogDescription>
                     </DialogHeader>
 
@@ -518,9 +612,7 @@ export function ChatsPage() {
                           }`}
                           onClick={() => switchDocument(index)}
                         >
-                          <span className="truncate text-xs">
-                            {doc.title}
-                          </span>
+                          <span className="truncate text-xs">{doc.title}</span>
                           {documents.length > 1 && (
                             <button
                               onClick={(e) => {

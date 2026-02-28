@@ -100,7 +100,7 @@ export function AppLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
+    <div className="h-screen bg-background relative overflow-hidden">
       {/* Background Gradients */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <div className="absolute top-[-20%] right-[-10%] w-[50%] h-[50%] bg-indigo-500/10 dark:bg-indigo-500/20 blur-[120px] rounded-full mix-blend-multiply dark:mix-blend-screen animate-fade-in" />
@@ -113,10 +113,10 @@ export function AppLayout() {
             "--sidebar-width": "19rem",
           } as React.CSSProperties
         }
-        className="relative z-10"
+        className="relative z-10 h-full min-h-0"
       >
         <AppSidebar user={user} profile={profile} />
-        <SidebarInset className="bg-transparent">
+        <SidebarInset className="bg-transparent overflow-hidden">
           <header className="flex h-16 shrink-0 items-center gap-2 px-4">
             <SidebarTrigger className="-ml-1" />
             <Separator
@@ -131,7 +131,7 @@ export function AppLayout() {
               </BreadcrumbList>
             </Breadcrumb>
           </header>
-          <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+          <div className="flex flex-1 flex-col gap-4 p-4 pt-0 min-h-0 overflow-auto">
             <Outlet context={{ user, profile }} />
           </div>
         </SidebarInset>
