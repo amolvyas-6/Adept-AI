@@ -3,7 +3,7 @@ from pathlib import Path
 from uuid import UUID
 
 from app.utils.rag import RAGUtility
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_groq import ChatGroq
 from langchain_ollama import ChatOllama
 
@@ -11,6 +11,7 @@ from langchain_ollama import ChatOllama
 class LLM:
     def __init__(self, rag_utility: RAGUtility):
         self.rag_utility = rag_utility
+        self.CHAT_HISTORY_LIMIT = 10
 
         # MODEL = "qwen3:latest"
         # self.chat_model = ChatOllama(model=MODEL, reasoning=False)
@@ -29,7 +30,9 @@ class LLM:
             """
         )
 
-    def query(self, user_query: str, document_ids: list[UUID]):
+    def query(
+        self, user_query: str, document_ids: list[UUID], chat_history: list[dict] = []
+    ):
         context_text, context_images, context_metadata = self.rag_utility.query(
             user_query, document_ids, k=3
         )
@@ -40,8 +43,24 @@ class LLM:
             + context_images
             + [{"type": "text", "text": f"USER QUESTION: {user_query}"}]
         )
+
+        for i in range(
+            max(0, len(chat_history) - self.CHAT_HISTORY_LIMIT), len(chat_history)
+        ):
+            message = chat_history[i]
+            if message["role"] == "assistant":
+                chat_history[i] = AIMessage(
+                    content=message["content"],
+                )
+            elif message["role"] == "user":
+                chat_history[i] = HumanMessage(
+                    content=message["content"],
+                )
+
         human_message = HumanMessage(content=human_message_content)
-        for chunk in self.chat_model.stream([self.system_message, human_message]):
+        for chunk in self.chat_model.stream(
+            [self.system_message] + chat_history + [human_message]
+        ):
             yield {"content": chunk.content}
 
 

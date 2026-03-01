@@ -2,6 +2,7 @@ import json
 from uuid import UUID
 
 from app.schemas.chats import ChatBase, MessageBase
+from app.utils.agent import LLM
 from bson import ObjectId
 from fastapi import HTTPException
 from pymongo.collection import Collection
@@ -60,7 +61,11 @@ def updateChat(chatId, message: MessageBase, chatCollection: Collection):
 
 
 def addMessageToChat(
-    chatId: str, userMessage: MessageBase, llm, loggedInUser, chatCollection: Collection
+    chatId: str,
+    userMessage: MessageBase,
+    llm: LLM,
+    loggedInUser,
+    chatCollection: Collection,
 ):
     userId = UUID(loggedInUser.id)
     query = {"_id": ObjectId(chatId)}
@@ -69,10 +74,17 @@ def addMessageToChat(
         if chat["user_id"] != userId:
             raise HTTPException(status_code=403, detail="Access denied to this chat")
 
-        updateChat(chatId, userMessage, chatCollection)
+        chat_history = []
+        for message in chat.get("messages", []):
+            if message["role"] == "assistant":
+                chat_history.append(message)
+            elif message["role"] == "user":
+                chat_history.append(message)
+
         aiResponse = MessageBase(content="", role="assistant")
         metadata = MessageBase(content="", role="metadata")
-        for chunk in llm.query(userMessage.content, chat["document_ids"]):
+
+        for chunk in llm.query(userMessage.content, chat["document_ids"], chat_history):
             if "content" in chunk:
                 aiResponse.content += chunk["content"]
                 yield f"data: {json.dumps({'content': chunk['content']})}\n\n"
@@ -80,9 +92,10 @@ def addMessageToChat(
                 metadata.content = chunk["metadata"]
                 yield f"data: {json.dumps({'metadata': chunk['metadata']})}\n\n"
 
-        updateChat(chatId, aiResponse, chatCollection)
+        updateChat(chatId, userMessage, chatCollection)
         if len(metadata.content) > 0:
             updateChat(chatId, metadata, chatCollection)
+        updateChat(chatId, aiResponse, chatCollection)
 
     else:
         raise HTTPException(status_code=404, detail="Chat not found")

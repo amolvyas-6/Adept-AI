@@ -69,6 +69,8 @@ class RAGUtility:
 
         self.s3_client = get_s3_client()
 
+        self.CONFIDENCE_THRESHOLD = 0.65
+
     def insert_to_collection(self, file_path: Path, docId: uuid.UUID):
         docs = self._parse_pdf(file_path, docId)
         self.vector_store.add_documents(docs)
@@ -97,14 +99,16 @@ class RAGUtility:
             ]
         )
 
-        rag_results = self.vector_store.similarity_search(
+        rag_results = self.vector_store.similarity_search_with_relevance_scores(
             query, filter=document_filter, k=k
         )
 
         context_text = ""
         context_images = []
         context_metadata = []
-        for result in rag_results:
+        for result, score in rag_results:
+            if score < self.CONFIDENCE_THRESHOLD:
+                continue
             if result.metadata["type"] == "text":
                 context_text += f"SOURCE: {result.metadata['title']} PAGE: {result.metadata['page']} \n"
                 context_text += f"CONTENT: {result.page_content}\n\n"
