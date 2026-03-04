@@ -1,12 +1,13 @@
 from uuid import UUID
 
-from app.schemas.profiles import ProfileUpdate
+from app.schemas.core import BaseUser
+from app.schemas.profiles import UpdateProfileBody, UserProfile
 from fastapi import HTTPException
 from supabase import Client
 
 
-def getProfileById(userId: UUID, loggedInUser, db: Client):
-    if loggedInUser.id != str(userId):
+def getProfileById(userId: UUID, loggedInUser: BaseUser, db: Client) -> UserProfile:
+    if loggedInUser.id != userId:
         raise HTTPException(status_code=403, detail="Forbidden")
 
     query = db.table("profiles").select("*").eq("user_id", str(userId))
@@ -14,13 +15,13 @@ def getProfileById(userId: UUID, loggedInUser, db: Client):
     if len(response.data) == 0:
         raise HTTPException(status_code=404, detail="Profile not found")
 
-    return response.data[0]
+    return UserProfile.model_validate(response.data[0])
 
 
 def updateProfileById(
-    userId: UUID, updateData: ProfileUpdate, loggedInUser, db: Client
-):
-    if loggedInUser.id != str(userId):
+    userId: UUID, updateData: UpdateProfileBody, loggedInUser: BaseUser, db: Client
+) -> UserProfile:
+    if loggedInUser.id != userId:
         raise HTTPException(status_code=403, detail="Forbidden")
 
     updates = {}
@@ -38,4 +39,4 @@ def updateProfileById(
     if len(response.data) == 0:
         raise HTTPException(status_code=404, detail="Profile not found")
 
-    return response.data[0]
+    return UserProfile.model_validate(response.data[0])

@@ -9,6 +9,7 @@ from langchain_groq import ChatGroq
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_qdrant import QdrantVectorStore
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from mypy_boto3_s3 import S3Client
 from qdrant_client import QdrantClient
 from qdrant_client.models import (
     Distance,
@@ -67,7 +68,7 @@ class RAGUtility:
             chunk_size=1200, chunk_overlap=200
         )
 
-        self.s3_client = get_s3_client()
+        self.s3_client: S3Client = get_s3_client()
 
         self.CONFIDENCE_THRESHOLD = 0.65
 
@@ -109,9 +110,12 @@ class RAGUtility:
         for result, score in rag_results:
             if score < self.CONFIDENCE_THRESHOLD:
                 continue
+
             if result.metadata["type"] == "text":
                 context_text += f"SOURCE: {result.metadata['title']} PAGE: {result.metadata['page']} \n"
-                context_text += f"CONTENT: {result.page_content}\n\n"
+                context_text += f"CONTENT: {result.page_content}\n"
+                context_text += "-----\n"
+
             elif result.metadata["type"] == "image":
                 context_images.append(
                     {
@@ -135,8 +139,8 @@ class RAGUtility:
         doc_texts = []
         images = []
         for page in file:
-            page_text = page.get_text()
-            page_images = page.get_images(full=True)
+            page_text: str = page.get_text()
+            page_images: list = page.get_images(full=True)
 
             if len(page_text) > 100:
                 doc_texts.append({"page_no": page.number, "content": page_text})

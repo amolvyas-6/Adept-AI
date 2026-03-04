@@ -1,9 +1,12 @@
+from uuid import UUID
+
 from app.schemas.auth import RegisterUser
+from app.schemas.profiles import UserProfile
 from fastapi import HTTPException
 from supabase import Client
 
 
-def registerNewUser(userData: RegisterUser, db: Client):
+def registerNewUser(userData: RegisterUser, db: Client) -> UserProfile:
     response = db.auth.admin.create_user(
         {
             "email": userData.email,
@@ -15,7 +18,6 @@ def registerNewUser(userData: RegisterUser, db: Client):
         raise HTTPException(status_code=400, detail="User registration failed")
 
     userId = response.user.id
-    print(userId)
     query = db.table("profiles").insert(
         {
             "user_id": str(userId),
@@ -28,12 +30,11 @@ def registerNewUser(userData: RegisterUser, db: Client):
     if len(result.data) == 0:
         raise HTTPException(status_code=400, detail="Failed to create user profile")
 
-    return result.data[0]
+    return UserProfile.model_validate(result.data[0])
 
 
-def removeUser(user_id: str, db: Client):
-    response = db.auth.admin.delete_user(user_id)
-    if response.get("error"):
-        raise HTTPException(status_code=400, detail="User deletion failed")
+def removeUser(user_id: UUID, db: Client) -> UserProfile | None:
+    profile = db.table("profiles").select("*").eq("user_id", str(user_id)).execute()
+    response = db.auth.admin.delete_user(str(user_id))
 
-    return None
+    return UserProfile.model_validate(profile.data[0]) if profile.data else None

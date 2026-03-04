@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
   "boto3>=1.42.39",
+  "boto3-stubs[s3]>=1.42.60",
   "fastapi[standard]>=0.128.0",
   "langchain-community>=0.4.1",
   "langchain-groq>=1.1.2",

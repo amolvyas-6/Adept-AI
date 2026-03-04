@@ -1,19 +1,22 @@
-import shutil
-from pathlib import Path
+from typing import Annotated
 from uuid import UUID
 
 from app.dependencies.aiDependency import getRAG
 from app.dependencies.authDependency import get_current_user
 from app.dependencies.s3Client import get_s3_client
 from app.dependencies.supabaseClient import get_supabase_client
+from app.schemas.core import ApiResponse, BaseUser
+from app.schemas.documents import Document, DocumentBase, DocumentWithURL
 from app.services.documents import (
     deleteDocumentById,
     getAllDocuments,
     getDocumentById,
-    getDocumentFileURL,
     uploadNewDocument,
 )
+from app.utils.rag import RAGUtility
 from fastapi import APIRouter, Depends, File, Form, UploadFile
+from mypy_boto3_s3 import S3Client
+from supabase import Client
 
 router = APIRouter(
     prefix="/documents", tags=["documents"], dependencies=[Depends(get_current_user)]
@@ -22,70 +25,68 @@ router = APIRouter(
 
 @router.get("/")
 def listDocuments(
+    db: Annotated[Client, Depends(get_supabase_client)],
     courseId: UUID | None = None,
     search: str | None = None,
     universityId: UUID | None = None,
-    db=Depends(get_supabase_client),
-):
+) -> ApiResponse[list[Document]]:
     documents = getAllDocuments(courseId, search, universityId, db)
-    return {
-        "success": True,
-        "data": documents,
-        "message": "Documents retrieved successfully",
-    }
+    return ApiResponse(
+        success=True, data=documents, message="Documents retrieved successfully"
+    )
 
 
 @router.get("/{documentId}")
 def getDocument(
     documentId: UUID,
-    db=Depends(get_supabase_client),
-    s3=Depends(get_s3_client),
-):
-    document = getDocumentById(documentId, db)
-    url = getDocumentFileURL(documentId, s3)
-    return {
-        "success": True,
-        "data": {
-            "document": document,
-            "url": url,
-        },
-        "message": "Document retrieved successfully",
-    }
+    db: Annotated[Client, Depends(get_supabase_client)],
+    s3: Annotated[S3Client, Depends(get_s3_client)],
+) -> ApiResponse[DocumentWithURL]:
+    document = getDocumentById(documentId, db, s3)
+
+    return ApiResponse(
+        success=True, data=document, message="Document retrieved successfully"
+    )
 
 
 @router.post("/")
 async def createDocument(
-    document: UploadFile = File(...),
-    title: str | None = Form(None),
-    unit: int = Form(..., ge=0, le=5),
-    courseId: UUID = Form(...),
-    current_user=Depends(get_current_user),
-    ragUtility=Depends(getRAG),
-    db=Depends(get_supabase_client),
-    s3=Depends(get_s3_client),
-):
+    current_user: Annotated[BaseUser, Depends(get_current_user)],
+    ragUtility: Annotated[RAGUtility, Depends(getRAG)],
+    db: Annotated[Client, Depends(get_supabase_client)],
+    s3: Annotated[S3Client, Depends(get_s3_client)],
+    document_data: Annotated[DocumentBase, Form()],
+    document: Annotated[UploadFile, File(...)],
+) -> ApiResponse[DocumentBase]:
 
-    document = uploadNewDocument(
-        title, unit, courseId, document, current_user, ragUtility, db, s3
+    new_document = uploadNewDocument(
+        document_data.title,
+        document_data.unit,
+        document_data.courseId,
+        document,
+        current_user,
+        ragUtility,
+        db,
+        s3,
     )
-    return {
-        "success": True,
-        "data": document,
-        "message": "Document uploaded successfully",
-    }
+    return ApiResponse(
+        success=True,
+        data=new_document,
+        message="Document uploaded successfully",
+    )
 
 
 @router.delete("/{documentId}")
 def deleteDocument(
     documentId: UUID,
-    ragUtility=Depends(getRAG),
-    db=Depends(get_supabase_client),
-    s3=Depends(get_s3_client),
-):
+    ragUtility: Annotated[RAGUtility, Depends(getRAG)],
+    db: Annotated[Client, Depends(get_supabase_client)],
+    s3: Annotated[S3Client, Depends(get_s3_client)],
+) -> ApiResponse[DocumentBase]:
 
     document = deleteDocumentById(documentId, ragUtility, db, s3)
-    return {
-        "success": True,
-        "data": document,
-        "message": "Document deleted successfully",
-    }
+    return ApiResponse(
+        success=True,
+        data=document,
+        message="Document deleted successfully",
+    )

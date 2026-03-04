@@ -1,26 +1,26 @@
 from uuid import UUID
 
+from app.schemas.core import BaseUser
+from app.schemas.library import Library, LibraryItem
+from fastapi import HTTPException
 from supabase import Client
 
 
-def getLibraryByUserId(loggedInUser, db: Client):
+def getLibraryByUserId(loggedInUser: BaseUser, db: Client) -> list[Library]:
     userId = loggedInUser.id
     query = (
         db.table("library")
         .select(
-            "*, documents(title, unit, id, profiles(full_name), courses(code, name))"
+            "*, documents(title, unit, id, profiles!documents_user_id_fkey1(full_name), courses(code, name))"
         )
         .eq("user_id", str(userId))
     )
     response = query.execute()
-    if len(response.data) == 0:
-        return []
 
     flattenedData = []
     for item in response.data:
         flattenedData.append(
             {
-                "id": item["id"],
                 "saved_at": item["created_at"],
                 "document_id": item["documents"]["id"],
                 "title": item["documents"]["title"],
@@ -35,22 +35,26 @@ def getLibraryByUserId(loggedInUser, db: Client):
             }
         )
 
-    return flattenedData
+    return [Library.model_validate(item) for item in flattenedData]
 
 
-def addDocumentToLibrary(loggedInUser, documentId: UUID, db: Client):
+def addDocumentToLibrary(
+    loggedInUser: BaseUser, documentId: UUID, db: Client
+) -> LibraryItem:
     userId = loggedInUser.id
     query = db.table("library").insert(
         {"user_id": str(userId), "document_id": str(documentId)}
     )
     response = query.execute()
     if len(response.data) == 0:
-        return None
+        raise HTTPException(status_code=400, detail="Failed to add document to library")
 
-    return response.data[0]
+    return LibraryItem.model_validate(response.data[0])
 
 
-def deleteDocumentFromLibrary(loggedInUser, documentId: UUID, db: Client):
+def deleteDocumentFromLibrary(
+    loggedInUser: BaseUser, documentId: UUID, db: Client
+) -> LibraryItem:
     userId = loggedInUser.id
     query = (
         db.table("library")
@@ -60,6 +64,8 @@ def deleteDocumentFromLibrary(loggedInUser, documentId: UUID, db: Client):
     )
     response = query.execute()
     if len(response.data) == 0:
-        return None
+        raise HTTPException(
+            status_code=400, detail="Failed to remove document from library"
+        )
 
-    return response.data[0]
+    return LibraryItem.model_validate(response.data[0])
