@@ -1,11 +1,13 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { api } from "@/lib/api";
-import type { Profile } from "@/lib/api";
+import { useAuth } from "@/contexts/auth-context";
+import { useAppData } from "@/contexts/app-data-context";
+import { useNavigate } from "react-router";
 import { toast } from "sonner";
-import { Loader2, Save, User } from "lucide-react";
+import { Loader2, Save, Trash2, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,6 +25,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const profileSchema = z.object({
@@ -32,23 +45,14 @@ const profileSchema = z.object({
 
 type ProfileFormData = z.infer<typeof profileSchema>;
 
-interface Department {
-  id: string;
-  name: string;
-}
-
-interface University {
-  id: string;
-  name: string;
-}
-
 export default function ProfilePage() {
-  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const { user, profile, refreshProfile, logout } = useAuth();
+  const { departments, university, initialLoading } = useAppData();
   const [saving, setSaving] = useState(false);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [university, setUniversity] = useState<University | null>(null);
-  const [userEmail, setUserEmail] = useState<string>("");
+  const [deleting, setDeleting] = useState(false);
+
+  const userEmail = user?.email || "";
 
   const {
     register,
@@ -58,56 +62,25 @@ export default function ProfilePage() {
     formState: { errors, isDirty },
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
+    values: {
+      fullName: profile?.full_name || "",
+      deptId: profile?.dept_id || "",
+    },
   });
 
   const selectedDeptId = watch("deptId");
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const session = await api.getSession();
-        if (!session) return;
-
-        setUserEmail(session.user.email || "");
-
-        const profileData = await api.getProfile(session.user.id);
-        setProfile(profileData);
-
-        // Fetch departments for the user's university
-        const deptData = await api.getDepartments(profileData.university_id);
-        setDepartments(deptData);
-
-        // Fetch university name
-        if (profileData.university_id) {
-          const uniData = await api.getUniversity(profileData.university_id);
-          setUniversity(uniData);
-        }
-
-        // Set form values
-        setValue("fullName", profileData.full_name || "");
-        setValue("deptId", profileData.dept_id || "");
-      } catch (error) {
-        console.error("Failed to fetch profile:", error);
-        toast.error("Failed to load profile");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [setValue]);
 
   const onSubmit = async (data: ProfileFormData) => {
     if (!profile) return;
 
     setSaving(true);
     try {
-      const updated = await api.updateProfile(profile.user_id, {
+      await api.updateProfile(profile.user_id, {
         fullName: data.fullName,
         deptId: data.deptId,
       });
 
-      setProfile(updated);
+      await refreshProfile();
       toast.success("Profile updated successfully");
     } catch (error) {
       console.error("Failed to update profile:", error);
@@ -133,7 +106,21 @@ export default function ProfilePage() {
     return departments.find((d) => d.id === deptId)?.name || "Unknown";
   };
 
-  if (loading) {
+  const handleDeleteAccount = async () => {
+    setDeleting(true);
+    try {
+      await api.deleteAccount();
+      await logout();
+      toast.success("Account deleted successfully");
+      navigate("/");
+    } catch (error) {
+      console.error("Failed to delete account:", error);
+      toast.error("Failed to delete account");
+      setDeleting(false);
+    }
+  };
+
+  if (initialLoading) {
     return (
       <div className="flex items-center justify-center h-full">
         <Loader2 className="size-8 animate-spin text-muted-foreground" />
@@ -268,6 +255,59 @@ export default function ProfilePage() {
               </Button>
             </div>
           </form>
+        </CardContent>
+      </Card>
+      {/* Danger Zone */}
+      <Card className="backdrop-blur-xl bg-card/60 border-destructive/40 mt-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-destructive">
+            <Trash2 className="size-5" />
+            Danger Zone
+          </CardTitle>
+          <CardDescription>
+            Permanently delete your account and all associated data. This action
+            cannot be undone.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="destructive"
+                disabled={deleting}
+                className="gap-2"
+              >
+                {deleting ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Trash2 className="size-4" />
+                )}
+                Delete Account
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete your account?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete your account, profile, library,
+                  and all chat history. This action{" "}
+                  <span className="font-semibold text-destructive">
+                    cannot be undone
+                  </span>
+                  .
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDeleteAccount}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Yes, delete my account
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </CardContent>
       </Card>
     </div>

@@ -6,20 +6,21 @@ from fastapi import HTTPException
 from supabase import Client
 
 
-def getLibraryByUserId(loggedInUser: BaseUser, db: Client) -> list[Library]:
-    userId = loggedInUser.id
+def get_library_by_user_id(current_user: BaseUser, db: Client) -> list[Library]:
+    user_id = current_user.id
     query = (
         db.table("library")
         .select(
             "*, documents(title, unit, id, profiles!documents_user_id_fkey1(full_name), courses(code, name))"
         )
-        .eq("user_id", str(userId))
+        .eq("user_id", str(user_id))
     )
     response = query.execute()
 
-    flattenedData = []
-    for item in response.data:
-        flattenedData.append(
+    flattened_data = []
+    data: list[dict] = response.data  # type: ignore
+    for item in data:
+        flattened_data.append(
             {
                 "saved_at": item["created_at"],
                 "document_id": item["documents"]["id"],
@@ -35,15 +36,15 @@ def getLibraryByUserId(loggedInUser: BaseUser, db: Client) -> list[Library]:
             }
         )
 
-    return [Library.model_validate(item) for item in flattenedData]
+    return [Library.model_validate(item) for item in flattened_data]
 
 
-def addDocumentToLibrary(
-    loggedInUser: BaseUser, documentId: UUID, db: Client
+def add_documents_to_library(
+    current_user: BaseUser, document_id: UUID, db: Client
 ) -> LibraryItem:
-    userId = loggedInUser.id
+    user_id = current_user.id
     query = db.table("library").insert(
-        {"user_id": str(userId), "document_id": str(documentId)}
+        {"user_id": str(user_id), "document_id": str(document_id)}
     )
     response = query.execute()
     if len(response.data) == 0:
@@ -52,15 +53,15 @@ def addDocumentToLibrary(
     return LibraryItem.model_validate(response.data[0])
 
 
-def deleteDocumentFromLibrary(
-    loggedInUser: BaseUser, documentId: UUID, db: Client
+def delete_document_from_library(
+    current_user: BaseUser, document_id: UUID, db: Client
 ) -> LibraryItem:
-    userId = loggedInUser.id
+    user_id = current_user.id
     query = (
         db.table("library")
         .delete()
-        .eq("user_id", str(userId))
-        .eq("document_id", str(documentId))
+        .eq("user_id", str(user_id))
+        .eq("document_id", str(document_id))
     )
     response = query.execute()
     if len(response.data) == 0:

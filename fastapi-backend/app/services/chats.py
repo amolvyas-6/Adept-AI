@@ -1,7 +1,13 @@
 import json
 from uuid import UUID
 
-from app.schemas.chats import Chat, ChatDocuments, ChatMetadata, MessageBase
+from app.schemas.chats import (
+    Chat,
+    ChatDocuments,
+    ChatMetadata,
+    MessageBase,
+    MetadataMessage,
+)
 from app.schemas.core import BaseUser
 from app.utils.agent import LLM
 from bson import ObjectId
@@ -10,114 +16,112 @@ from pymongo.collection import Collection
 from supabase import Client
 
 
-def getUserChats(
-    chatCollection: Collection, loggedInUser: BaseUser
+def get_user_chats(
+    chat_collection: Collection, current_user: BaseUser
 ) -> list[ChatMetadata]:
-    userId = loggedInUser.id
-    query = {"user_id": userId}
+    user_id = current_user.id
+    query = {"user_id": user_id}
     filters = {"_id": 1, "title": 1, "document_ids": 1}
-    chatsCursor = chatCollection.find(query, filters)
+    chats_cursor = chat_collection.find(query, filters)
     chats = []
-    for chat in chatsCursor:
+    for chat in chats_cursor:
         chats.append(chat)
+    print(chats)
     return [ChatMetadata.model_validate(chat) for chat in chats]
 
 
-def getChatById(
-    chatId: str, loggedInUser: BaseUser, chatCollection: Collection
+def get_chat_by_id(
+    chat_id: str, current_user: BaseUser, chat_collection: Collection
 ) -> Chat:
-    userId = loggedInUser.id
-    query = {"_id": ObjectId(chatId)}
-    chat = chatCollection.find_one(query)
+    user_id = current_user.id
+    query = {"_id": ObjectId(chat_id)}
+    chat = chat_collection.find_one(query)
     if chat:
-        if chat["user_id"] != userId:
+        if chat["user_id"] != user_id:
             raise HTTPException(status_code=403, detail="Access denied to this chat")
     else:
         raise HTTPException(status_code=404, detail="Chat not found")
     return Chat.model_validate(chat)
 
 
-def createNewChat(
-    documentId: UUID, currentUser: BaseUser, chatCollection: Collection, db: Client
+def create_new_chat(
+    document_id: UUID, current_user: BaseUser, chat_collection: Collection, db: Client
 ) -> Chat:
-    userId = currentUser.id
+    user_id = current_user.id
 
-    response = db.table("documents").select("id").eq("id", str(documentId)).execute()
+    response = db.table("documents").select("id").eq("id", str(document_id)).execute()
     if not response.data:
         raise HTTPException(status_code=404, detail="Document not found")
 
-    newChat = Chat(user_id=userId, document_ids=[documentId], messages=[])
-    result = chatCollection.insert_one(newChat.model_dump())
+    new_chat = Chat(user_id=user_id, document_ids=[document_id], messages=[])
+    result = chat_collection.insert_one(new_chat.model_dump(exclude={"id"}))
     if not result.acknowledged:
         raise HTTPException(status_code=500, detail="Failed to create chat")
 
-    return newChat
+    return get_chat_by_id(str(result.inserted_id), current_user, chat_collection)
 
 
-def updateChat(chatId, message: MessageBase, chatCollection: Collection):
-    query = {"_id": ObjectId(chatId)}
+def update_chat(
+    chat_id: str, message: MessageBase | MetadataMessage, chat_collection: Collection
+):
+    query = {"_id": ObjectId(chat_id)}
     update = {"$push": {"messages": message.model_dump()}}
-    result = chatCollection.update_one(query, update)
+    result = chat_collection.update_one(query, update)
     if result.modified_count == 0:
         raise HTTPException(status_code=500, detail="Failed to update chat")
 
 
-def addMessageToChat(
-    chatId: str,
-    userMessage: MessageBase,
+def add_message_to_chat(
+    chat_id: str,
+    user_message: MessageBase,
     llm: LLM,
-    loggedInUser: BaseUser,
-    chatCollection: Collection,
+    current_user: BaseUser,
+    chat_collection: Collection,
 ):
-    userId = loggedInUser.id
-    query = {"_id": ObjectId(chatId)}
-    chat = chatCollection.find_one(query)
-    if chat:
-        if chat["user_id"] != userId:
-            raise HTTPException(status_code=403, detail="Access denied to this chat")
+    user_id = current_user.id
+    chat = get_chat_by_id(chat_id, current_user, chat_collection)
+    if chat.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Access denied to this chat")
 
-        chat_history = []
-        for message in chat.get("messages", []):
-            if message["role"] == "assistant":
-                chat_history.append(message)
-            elif message["role"] == "user":
-                chat_history.append(message)
+    chat_history = []
+    for message in chat.messages:
+        if message.role == "assistant":
+            chat_history.append(message.model_dump())
+        elif message.role == "user":
+            chat_history.append(message.model_dump())
 
-        aiResponse = MessageBase(content="", role="assistant")
-        metadata = MessageBase(content="", role="metadata")
+    ai_response = MessageBase(content="", role="assistant")
+    metadata = MetadataMessage(content=[], role="metadata")
 
-        for chunk in llm.query(userMessage.content, chat["document_ids"], chat_history):
-            if "content" in chunk:
-                aiResponse.content += chunk["content"]
-                yield f"data: {json.dumps({'content': chunk['content']})}\n\n"
-            elif "metadata" in chunk:
-                metadata.content = chunk["metadata"]
-                yield f"data: {json.dumps({'metadata': chunk['metadata']})}\n\n"
+    for chunk in llm.query(user_message.content, chat.document_ids, chat_history):
+        if "content" in chunk:
+            ai_response.content += chunk["content"]  # type: ignore
+            yield f"data: {json.dumps({'content': chunk['content']})}\n\n"
+        elif "metadata" in chunk:
+            metadata.content = chunk["metadata"]  # type: ignore
+            yield f"data: {json.dumps({'metadata': chunk['metadata']})}\n\n"
 
-        updateChat(chatId, userMessage, chatCollection)
-        if len(metadata.content) > 0:
-            updateChat(chatId, metadata, chatCollection)
-        updateChat(chatId, aiResponse, chatCollection)
-
-    else:
-        raise HTTPException(status_code=404, detail="Chat not found")
+    update_chat(chat_id, user_message, chat_collection)
+    if len(metadata.content) > 0:
+        update_chat(chat_id, metadata, chat_collection)
+    update_chat(chat_id, ai_response, chat_collection)
 
 
-def addDocumentToChat(
-    chatId: str,
-    documentId: UUID,
-    loggedInUser: BaseUser,
-    chatCollection: Collection,
+def add_document_to_chat(
+    chat_id: str,
+    document_id: UUID,
+    current_user: BaseUser,
+    chat_collection: Collection,
     db: Client,
 ) -> ChatDocuments:
-    userId = loggedInUser.id
-    query = {"_id": ObjectId(chatId)}
-    chat = chatCollection.find_one(query, {"document_ids": 1, "user_id": 1})
+    user_id = current_user.id
+    query = {"_id": ObjectId(chat_id)}
+    chat = chat_collection.find_one(query, {"document_ids": 1, "user_id": 1})
     if chat:
-        if chat["user_id"] != userId:
+        if chat["user_id"] != user_id:
             raise HTTPException(status_code=403, detail="Access denied to this chat")
 
-        if documentId in chat.get("document_ids", []):
+        if document_id in chat.get("document_ids", []):
             raise HTTPException(
                 status_code=400, detail="Document already added to this chat"
             )
@@ -128,65 +132,65 @@ def addDocumentToChat(
             )
 
         response = (
-            db.table("documents").select("id").eq("id", str(documentId)).execute()
+            db.table("documents").select("id").eq("id", str(document_id)).execute()
         )
 
         if not response.data:
             raise HTTPException(status_code=404, detail="Document not found")
 
-        update = {"$push": {"document_ids": documentId}}
-        result = chatCollection.update_one(query, update)
+        update = {"$push": {"document_ids": document_id}}
+        result = chat_collection.update_one(query, update)
         if result.modified_count == 0:
             raise HTTPException(
                 status_code=500, detail="Failed to add document to chat"
             )
 
-        new_document_ids = chat["document_ids"] + [documentId]
+        new_document_ids = chat["document_ids"] + [document_id]
         return ChatDocuments.model_validate({"document_ids": new_document_ids})
     else:
         raise HTTPException(status_code=404, detail="Chat not found")
 
 
-def delelteDocumentFromChat(
-    chatId: str, documentId: UUID, loggedInUser: BaseUser, chatCollection: Collection
+def delete_documents_from_chat(
+    chat_id: str, document_id: UUID, current_user: BaseUser, chat_collection: Collection
 ) -> ChatDocuments:
-    userId = loggedInUser.id
-    query = {"_id": ObjectId(chatId)}
-    chat = chatCollection.find_one(query, {"document_ids": 1, "user_id": 1})
+    user_id = current_user.id
+    query = {"_id": ObjectId(chat_id)}
+    chat = chat_collection.find_one(query, {"document_ids": 1, "user_id": 1})
     if chat:
-        if chat["user_id"] != userId:
+        if chat["user_id"] != user_id:
             raise HTTPException(status_code=403, detail="Access denied to this chat")
 
-        if documentId not in chat.get("document_ids", []):
+        if document_id not in chat.get("document_ids", []):
             raise HTTPException(
                 status_code=400, detail="Document not found in this chat"
             )
 
-        update = {"$pull": {"document_ids": documentId}}
-        result = chatCollection.update_one(query, update)
+        update = {"$pull": {"document_ids": document_id}}
+        result = chat_collection.update_one(query, update)
         if result.modified_count == 0:
             raise HTTPException(
                 status_code=500, detail="Failed to remove document from chat"
             )
 
         updated_document_ids = [
-            doc_id for doc_id in chat["document_ids"] if doc_id != documentId
+            doc_id for doc_id in chat["document_ids"] if doc_id != document_id
         ]
         return ChatDocuments.model_validate({"document_ids": updated_document_ids})
     else:
         raise HTTPException(status_code=404, detail="Chat not found")
 
 
-def deleteChatById(
-    chatId: str, loggedInUser: BaseUser, chatCollection: Collection
+def delete_chat_by_id(
+    chat_id: str, current_user: BaseUser, chat_collection: Collection
 ) -> None:
-    userId = loggedInUser.id
-    query = {"_id": ObjectId(chatId)}
-    chat = chatCollection.find_one(query, {"messages": 0})
+    user_id = current_user.id
+    query = {"_id": ObjectId(chat_id)}
+    chat = chat_collection.find_one(query, {"messages": 0})
     if chat:
-        if chat["user_id"] != userId:
+        if chat["user_id"] != user_id:
             raise HTTPException(status_code=403, detail="Access denied to this chat")
-        result = chatCollection.delete_one(query)
+        result = chat_collection.delete_one(query)
         if result.deleted_count == 0:
             raise HTTPException(status_code=500, detail="Failed to delete chat")
     else:

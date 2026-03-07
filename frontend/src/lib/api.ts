@@ -45,13 +45,13 @@ export interface Document {
   created_at: string;
   course_id: string;
   user_id: string;
-  profiles?: { full_name: string };
-  courses?: { name: string; code: string };
+  uploaded_by?: string;
+  course_code?: string;
+  course_name?: string;
   url?: string;
 }
 
 export interface LibraryItem {
-  id: string;
   saved_at: string;
   document_id: string;
   title: string;
@@ -81,6 +81,7 @@ export interface Chat {
   title: string;
   document_ids: string[];
   messages: ChatMessage[];
+  created_at: string;
 }
 
 export interface ChatListItem {
@@ -91,6 +92,7 @@ export interface ChatListItem {
 
 export interface Profile {
   user_id: string;
+  created_at: string;
   full_name: string;
   dept_id: string;
   university_id: string;
@@ -110,23 +112,49 @@ export const api = {
 
   getDepartments: async (
     universityId?: string
-  ): Promise<{ id: string; name: string }[]> => {
-    const params = universityId ? `?universityId=${universityId}` : "";
+  ): Promise<{ id: string; name: string; abbreviation: string }[]> => {
+    const params = universityId ? `?university_id=${universityId}` : "";
     const res = await fetch(`${BASE_URL}/departments${params}`);
     return handleResponse(res);
   },
 
-  registerUser: async (userData: {
-    email: string;
-    fullName: string;
-    deptId: string;
-    password: string;
-    universityId: string;
-  }) => {
+  registerUser: async (userData: { email: string; password: string }) => {
     const res = await fetch(`${BASE_URL}/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(userData),
+    });
+    return handleResponse(res);
+  },
+
+  // Protected endpoints - Profile
+  getProfile: async (userId: string): Promise<Profile> => {
+    const res = await authFetch(`/profiles/${userId}`);
+    return handleResponse(res);
+  },
+
+  createProfile: async (data: {
+    fullName: string;
+    dept_id: string;
+    university_id: string;
+  }): Promise<Profile> => {
+    const res = await authFetch(`/profiles/complete-profile`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
+  updateProfile: async (
+    userId: string,
+    data: { fullName?: string; deptId?: string }
+  ): Promise<Profile> => {
+    const res = await authFetch(`/profiles/${userId}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        full_name: data.fullName,
+        dept_id: data.deptId,
+      }),
     });
     return handleResponse(res);
   },
@@ -138,10 +166,10 @@ export const api = {
     universityId?: string;
   }): Promise<Document[]> => {
     const searchParams = new URLSearchParams();
-    if (params?.courseId) searchParams.set("courseId", params.courseId);
+    if (params?.courseId) searchParams.set("course_id", params.courseId);
     if (params?.search) searchParams.set("search", params.search);
     if (params?.universityId)
-      searchParams.set("universityId", params.universityId);
+      searchParams.set("university_id", params.universityId);
 
     const query = searchParams.toString();
     const res = await authFetch(`/documents${query ? `?${query}` : ""}`);
@@ -168,7 +196,7 @@ export const api = {
     formData.append("document", data.file);
     formData.append("title", data.title);
     formData.append("unit", data.unit.toString());
-    formData.append("courseId", data.courseId);
+    formData.append("course_id", data.courseId);
 
     const res = await fetch(`${BASE_URL}/documents`, {
       method: "POST",
@@ -200,28 +228,11 @@ export const api = {
     return handleResponse(res);
   },
 
-  // Protected endpoints - Profile
-  getProfile: async (userId: string): Promise<Profile> => {
-    const res = await authFetch(`/profiles/${userId}`);
-    return handleResponse(res);
-  },
-
-  updateProfile: async (
-    userId: string,
-    data: { fullName?: string; deptId?: string }
-  ): Promise<Profile> => {
-    const res = await authFetch(`/profiles/${userId}`, {
-      method: "PATCH",
-      body: JSON.stringify(data),
-    });
-    return handleResponse(res);
-  },
-
   // Protected endpoints - Courses
   getCourses: async (
     universityId?: string
   ): Promise<{ id: string; name: string; code: string }[]> => {
-    const params = universityId ? `?universityId=${universityId}` : "";
+    const params = universityId ? `?university_id=${universityId}` : "";
     const res = await authFetch(`/courses${params}`);
     return handleResponse(res);
   },
@@ -238,7 +249,7 @@ export const api = {
   },
 
   createChat: async (documentId: string): Promise<Chat> => {
-    const res = await authFetch(`/chats?documentId=${documentId}`, {
+    const res = await authFetch(`/chats?document_id=${documentId}`, {
       method: "POST",
     });
     return handleResponse(res);
@@ -314,11 +325,39 @@ export const api = {
     return handleResponse(res);
   },
 
+  deleteAccount: async (): Promise<void> => {
+    const res = await authFetch("/auth", { method: "DELETE" });
+    return handleResponse(res);
+  },
+
   // Auth helpers (these use supabase client directly for auth operations)
   login: async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
+    });
+    if (error) throw error;
+    return data;
+  },
+
+  signUpWithEmail: async (email: string, password: string) => {
+    // First register with backend (creates Supabase user via admin API)
+    await api.registerUser({ email, password });
+    // Then sign in to get the session
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) throw error;
+    return data;
+  },
+
+  signInWithGoogle: async () => {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/complete-profile`,
+      },
     });
     if (error) throw error;
     return data;

@@ -11,21 +11,21 @@ from fastapi import HTTPException
 from supabase import Client
 
 
-def getAllCourses(universityId: UUID, db: Client) -> list[Course]:
-    query = db.table("courses").select("*").eq("university_id", str(universityId))
+def get_all_courses(university_id: UUID, db: Client) -> list[Course]:
+    query = db.table("courses").select("*").eq("university_id", str(university_id))
     response = query.execute()
     return [Course.model_validate(course) for course in response.data]
 
 
-def getCourseById(courseId: UUID, db: Client) -> Course:
-    query = db.table("courses").select("*").eq("id", str(courseId))
+def get_course_by_id(course_id: UUID, db: Client) -> Course:
+    query = db.table("courses").select("*").eq("id", str(course_id))
     response = query.execute()
     if len(response.data) == 0:
         raise HTTPException(status_code=404, detail="Course not found")
     return Course.model_validate(response.data[0])
 
 
-def createNewCourse(course: CreateCourseBody, db: Client) -> Course:
+def create_new_course(course: CreateCourseBody, db: Client) -> Course:
     query = db.table("courses").insert(
         {
             "name": course.name,
@@ -39,7 +39,7 @@ def createNewCourse(course: CreateCourseBody, db: Client) -> Course:
     return Course.model_validate(response.data[0])
 
 
-def updateCourseById(courseId: UUID, course: UpdateCourseBody, db: Client) -> Course:
+def update_course_by_id(courseId: UUID, course: UpdateCourseBody, db: Client) -> Course:
     update_data = {}
     if course.name is not None:
         update_data["name"] = course.name
@@ -58,15 +58,15 @@ def updateCourseById(courseId: UUID, course: UpdateCourseBody, db: Client) -> Co
     return Course.model_validate(response.data[0])
 
 
-def deleteCourseById(courseId: UUID, db: Client) -> Course:
-    query = db.table("courses").delete().eq("id", str(courseId))
+def delete_course_by_id(course_id: UUID, db: Client) -> Course:
+    query = db.table("courses").delete().eq("id", str(course_id))
     response = query.execute()
     if len(response.data) == 0:
         raise HTTPException(status_code=404, detail="Course not found")
     return Course.model_validate(response.data[0])
 
 
-def linkCourseToDepartment(data: CourseDataLink, db: Client) -> CourseWithDepartment:
+def link_course_to_department(data: CourseDataLink, db: Client) -> CourseWithDepartment:
     query = db.table("provided_by").insert(
         {
             "course_id": str(data.course_id),

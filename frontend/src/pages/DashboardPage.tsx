@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import { useOutletContext } from "react-router";
+import { useMemo } from "react";
 import {
   FileText,
   Library,
@@ -18,80 +17,30 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { api } from "@/lib/api";
-import { toast } from "sonner";
-import type { User } from "@supabase/supabase-js";
-
-interface LayoutContext {
-  user: User | null;
-  profile: {
-    full_name?: string;
-    dept_id?: string;
-    university_id?: string;
-  } | null;
-}
-
-interface DashboardStats {
-  totalDocuments: number;
-  libraryCount: number;
-  recentDocuments: {
-    id: string;
-    title: string;
-    course_code?: string;
-    created_at: string;
-  }[];
-}
+import { useAuth } from "@/contexts/auth-context";
+import { useAppData } from "@/contexts/app-data-context";
 
 export function DashboardPage() {
-  const { user, profile } = useOutletContext<LayoutContext>();
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [universityName, setUniversityName] = useState<string>("");
-  const [loading, setLoading] = useState(true);
+  const { profile } = useAuth();
+  const { documents, library, university, initialLoading } = useAppData();
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      // Wait for both user and profile with university_id to be loaded
-      if (!user || !profile?.university_id) return;
+  const stats = useMemo(() => {
+    const sortedLibrary = [...library].sort(
+      (a, b) => new Date(b.saved_at).getTime() - new Date(a.saved_at).getTime()
+    );
+    const recentDocuments = sortedLibrary.slice(0, 5).map((doc) => ({
+      id: doc.document_id,
+      title: doc.title,
+      course_code: doc.course_code,
+      created_at: doc.saved_at,
+    }));
 
-      try {
-        // Fetch university name
-        const university = await api.getUniversity(profile.university_id);
-        setUniversityName(university.name);
-
-        // Fetch all documents via API (filtered by user's university)
-        const universityId = profile.university_id;
-        const documents = await api.getDocuments({ universityId });
-
-        // Fetch user's library via API
-        const library = await api.getLibrary();
-
-        // Get recent documents (last 5, sorted by created_at)
-        const sortedDocs = [...library].sort(
-          (a, b) =>
-            new Date(b.saved_at).getTime() - new Date(a.saved_at).getTime()
-        );
-        const recentDocuments = sortedDocs.slice(0, 5).map((doc) => ({
-          id: doc.id,
-          title: doc.title,
-          course_code: doc.course_code,
-          created_at: doc.saved_at,
-        }));
-
-        setStats({
-          totalDocuments: documents.length,
-          libraryCount: library.length,
-          recentDocuments,
-        });
-      } catch (error) {
-        console.error("Failed to fetch dashboard data:", error);
-        toast.error("Failed to load dashboard data");
-      } finally {
-        setLoading(false);
-      }
+    return {
+      totalDocuments: documents.length,
+      libraryCount: library.length,
+      recentDocuments,
     };
-
-    fetchDashboardData();
-  }, [user, profile?.university_id]);
+  }, [documents, library]);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -107,7 +56,7 @@ export function DashboardPage() {
     });
   };
 
-  if (loading) {
+  if (initialLoading) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
         <Loader2 className="size-8 text-indigo-500 animate-spin" />
@@ -127,12 +76,12 @@ export function DashboardPage() {
         </h1>
         <p className="text-muted-foreground">
           Here's an overview of your learning journey
-          {universityName && (
+          {university?.name && (
             <span>
               {" "}
               at{" "}
               <span className="font-medium text-foreground">
-                {universityName}
+                {university.name}
               </span>
             </span>
           )}

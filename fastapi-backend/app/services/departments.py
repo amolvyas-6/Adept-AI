@@ -9,21 +9,21 @@ from fastapi import HTTPException
 from supabase import Client
 
 
-def getAllDepartments(universityId: UUID, db: Client) -> list[Department]:
-    query = db.table("departments").select("*").eq("university_id", str(universityId))
+def get_all_departments(university_id: UUID, db: Client) -> list[Department]:
+    query = db.table("departments").select("*").eq("university_id", str(university_id))
     response = query.execute()
     return [Department.model_validate(dept) for dept in response.data]
 
 
-def getDepartmentById(deptId: UUID, db: Client) -> Department:
-    query = db.table("departments").select("*").eq("id", str(deptId))
+def get_department_by_id(dept_id: UUID, db: Client) -> Department:
+    query = db.table("departments").select("*").eq("id", str(dept_id))
     response = query.execute()
     if len(response.data) == 0:
         raise HTTPException(status_code=404, detail="Department not found")
     return Department.model_validate(response.data[0])
 
 
-def createNewDepartment(dept: CreateDepartmentBody, db: Client) -> Department:
+def create_new_department(dept: CreateDepartmentBody, db: Client) -> Department:
     query = db.table("departments").insert(
         {
             "name": dept.name,
@@ -37,8 +37,8 @@ def createNewDepartment(dept: CreateDepartmentBody, db: Client) -> Department:
     return Department.model_validate(response.data[0])
 
 
-def updateDepartmentById(
-    deptId: UUID, dept: UpdateDepartmentBody, db: Client
+def update_department_by_id(
+    dept_id: UUID, dept: UpdateDepartmentBody, db: Client
 ) -> Department:
     update_data = {}
     if dept.name is not None:
@@ -51,15 +51,15 @@ def updateDepartmentById(
     if len(update_data) == 0:
         raise HTTPException(status_code=400, detail="No fields to update provided")
 
-    query = db.table("departments").update(update_data).eq("id", str(deptId))
+    query = db.table("departments").update(update_data).eq("id", str(dept_id))
     response = query.execute()
     if len(response.data) == 0:
         raise HTTPException(status_code=500, detail="Failed to update department")
     return Department.model_validate(response.data[0])
 
 
-def deleteDepartmentById(deptId: UUID, db: Client) -> Department:
-    query = db.table("departments").delete().eq("id", str(deptId))
+def delete_department_by_id(dept_id: UUID, db: Client) -> Department:
+    query = db.table("departments").delete().eq("id", str(dept_id))
     response = query.execute()
     if len(response.data) == 0:
         raise HTTPException(status_code=404, detail="Department not found")

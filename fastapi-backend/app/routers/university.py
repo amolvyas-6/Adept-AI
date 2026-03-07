@@ -1,8 +1,8 @@
 from typing import Annotated
 from uuid import UUID
 
-from app.dependencies.authDependency import get_current_user
-from app.dependencies.supabaseClient import get_supabase_client
+from app.dependencies.auth_dependency import get_current_user
+from app.dependencies.supabase_client import get_supabase_client
 from app.schemas.core import ApiResponse, BaseUser
 from app.schemas.university import (
     CreateUniversityBody,
@@ -10,11 +10,11 @@ from app.schemas.university import (
     UpdateUniversityBody,
 )
 from app.services.university import (
-    createNewUniversity,
-    deleteUniversityById,
-    getAllUniversities,
-    getUniversityById,
-    updateUniversityById,
+    create_new_university,
+    delete_university_by_id,
+    get_all_universities,
+    get_university_by_id,
+    update_university_by_id,
 )
 from fastapi import APIRouter, Depends
 from supabase import Client
@@ -22,11 +22,11 @@ from supabase import Client
 router = APIRouter(prefix="/universities", tags=["universities"])
 
 
-@router.get("/")
-def listUniversities(
+@router.get("")
+def list_universities(
     db: Annotated[Client, Depends(get_supabase_client)],
 ) -> ApiResponse[list[University]]:
-    universities = getAllUniversities(db)
+    universities = get_all_universities(db)
     return ApiResponse(
         success=True,
         data=universities,
@@ -34,11 +34,11 @@ def listUniversities(
     )
 
 
-@router.get("/{universityId}")
-def getUniversity(
-    universityId: UUID, db: Annotated[Client, Depends(get_supabase_client)]
+@router.get("/{university_id}")
+def get_university(
+    university_id: UUID, db: Annotated[Client, Depends(get_supabase_client)]
 ) -> ApiResponse[University]:
-    university = getUniversityById(universityId, db)
+    university = get_university_by_id(university_id, db)
     return ApiResponse(
         success=True,
         data=university,
@@ -46,42 +46,42 @@ def getUniversity(
     )
 
 
-@router.post("/")
-def createUniversity(
-    universityData: CreateUniversityBody,
+@router.post("")
+def create_university(
+    university_data: CreateUniversityBody,
     db: Annotated[Client, Depends(get_supabase_client)],
     _: Annotated[BaseUser, Depends(get_current_user)],
 ) -> ApiResponse[University]:
-    newUniversity = createNewUniversity(universityData, db)
+    new_university = create_new_university(university_data, db)
     return ApiResponse(
         success=True,
-        data=newUniversity,
+        data=new_university,
         message="University created successfully",
     )
 
 
-@router.patch("/{universityId}")
-def updateUniversity(
-    universityId: UUID,
-    universityData: UpdateUniversityBody,
+@router.patch("/{university_id}")
+def update_university(
+    university_id: UUID,
+    university_data: UpdateUniversityBody,
     db: Annotated[Client, Depends(get_supabase_client)],
     _: Annotated[BaseUser, Depends(get_current_user)],
 ) -> ApiResponse[University]:
-    updatedUniversity = updateUniversityById(universityId, universityData, db)
+    updated_university = update_university_by_id(university_id, university_data, db)
     return ApiResponse(
         success=True,
-        data=updatedUniversity,
+        data=updated_university,
         message="University updated successfully",
     )
 
 
-@router.delete("/{universityId}")
-def deleteUniversity(
-    universityId: UUID,
+@router.delete("/{university_id}")
+def delete_university(
+    university_id: UUID,
     db: Annotated[Client, Depends(get_supabase_client)],
     _: Annotated[BaseUser, Depends(get_current_user)],
 ) -> ApiResponse[University]:
-    deletedUniversity = deleteUniversityById(universityId, db)
+    deleted_university = delete_university_by_id(university_id, db)
     return ApiResponse(
-        success=True, data=deletedUniversity, message="University deleted successfully"
+        success=True, data=deleted_university, message="University deleted successfully"
     )

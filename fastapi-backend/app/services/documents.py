@@ -11,38 +11,39 @@ from mypy_boto3_s3 import S3Client
 from supabase import Client
 
 
-def getAllDocuments(
-    courseId: UUID | None,
+def get_all_documents(
+    course_id: UUID | None,
     search: str | None,
-    universityId: UUID | None,
+    university_id: UUID | None,
     db: Client,
 ) -> list[Document]:
-    courseIds = None
-    if universityId:
-        query = db.table("courses").select("id").eq("university_id", str(universityId))
-        courses = query.execute().data
-        courseIds = [course["id"] for course in courses]
+    course_ids = None
+    if university_id:
+        query = db.table("courses").select("id").eq("university_id", str(university_id))
+        courses: list[dict] = query.execute().data  # type: ignore
+        course_ids = [course["id"] for course in courses]
 
     query = db.table("documents").select(
         "*, profiles!documents_user_id_fkey1(full_name), courses(name, code)"
     )
 
-    if courseId:
-        query = query.eq("course_id", str(courseId))
+    if course_id:
+        query = query.eq("course_id", str(course_id))
 
     if search:
         query = query.ilike("title", f"%{search}%")
 
-    if courseIds is not None:
-        if len(courseIds) == 0:
+    if course_ids is not None:
+        if len(course_ids) == 0:
             return []
 
-        query = query.in_("course_id", [str(courseId) for courseId in courseIds])
+        query = query.in_("course_id", [str(courseId) for courseId in course_ids])
 
     response = query.execute()
 
     flattened_data = []
-    for item in response.data:
+    data: list[dict] = response.data  # type: ignore
+    for item in data:
         flattened_item = {
             "id": item["id"],
             "title": item["title"],
@@ -61,21 +62,21 @@ def getAllDocuments(
     return [Document.model_validate(item) for item in flattened_data]
 
 
-def getDocumentById(
-    documentId: UUID,
+def get_document_by_id(
+    document_id: UUID,
     db: Client,
     s3: S3Client,
 ) -> DocumentWithURL:
     query = (
         db.table("documents")
         .select("*, profiles!documents_user_id_fkey1(full_name), courses(name, code)")
-        .eq("id", str(documentId))
+        .eq("id", str(document_id))
     )
     response = query.execute()
     if len(response.data) == 0:
         raise HTTPException(status_code=404, detail="Document not found")
 
-    data = response.data[0]
+    data: dict = response.data[0]  # type: ignore
     flattened_item = {
         "id": data["id"],
         "title": data["title"],
@@ -90,22 +91,24 @@ def getDocumentById(
         "course_code": (data["courses"]["code"] if data.get("courses") else None),
     }
 
-    url = getDocumentFileURL(documentId, s3)
+    url = get_document_file_url(document_id, s3)
     flattened_item["url"] = url
 
     return DocumentWithURL.model_validate(flattened_item)
 
 
-def uploadNewDocument(
-    title: str | None,
-    unit: int,
-    courseId: UUID,
+def upload_new_document(
+    document_data: DocumentBase,
     file: UploadFile,
-    currentUser: BaseUser,
-    ragUtility: RAGUtility,
+    current_user: BaseUser,
+    rag_utility: RAGUtility,
     db: Client,
     s3: S3Client,
 ) -> DocumentBase:
+
+    title = document_data.title
+    unit = document_data.unit
+    course_id = document_data.course_id
 
     if file.content_type != "application/pdf":
         raise HTTPException(status_code=400, detail="Only PDF files are allowed")
@@ -117,17 +120,17 @@ def uploadNewDocument(
         with open(temp_file_path, "wb") as f:
             shutil.copyfileobj(file.file, f)
 
-        bucketName = os.getenv("SUPABASE_S3_BUCKET_NAME")
+        bucket_name = os.getenv("SUPABASE_S3_BUCKET_NAME", "")
         key = f"documents/{document_id}"
         s3.upload_file(
             Filename=str(temp_file_path),
-            Bucket=bucketName,
+            Bucket=bucket_name,
             Key=key,
             ExtraArgs={"ContentType": "application/pdf"},
         )
-        ragUtility.insert_to_collection(temp_file_path, docId=UUID(document_id))
+        rag_utility.insert_to_collection(temp_file_path, docId=UUID(document_id))
 
-        userId = currentUser.id
+        user_id = current_user.id
         if not title:
             title = temp_file_path.stem
 
@@ -136,8 +139,8 @@ def uploadNewDocument(
                 "id": str(document_id),
                 "title": title,
                 "unit": unit,
-                "course_id": str(courseId),
-                "user_id": str(userId),
+                "course_id": str(course_id),
+                "user_id": str(user_id),
             }
         )
         response = query.execute()
@@ -153,26 +156,25 @@ def uploadNewDocument(
             temp_file_path.unlink()
 
 
-def deleteDocumentById(
-    documentId: UUID,
-    ragUtility: RAGUtility,
+def delete_document_by_id(
+    document_id: UUID,
+    rag_utility: RAGUtility,
     db: Client,
     s3: S3Client,
 ) -> DocumentBase:
-    key = f"documents/{documentId}"
-    bucketName = os.getenv("SUPABASE_S3_BUCKET_NAME")
-    s3.delete_object(Bucket=bucketName, Key=key)
+    key = f"documents/{document_id}"
+    bucket_name = os.getenv("SUPABASE_S3_BUCKET_NAME", "")
+    s3.delete_object(Bucket=bucket_name, Key=key)
 
     document_images = s3.list_objects_v2(
-        Bucket=bucketName, Prefix=f"images/{documentId}/"
+        Bucket=bucket_name, Prefix=f"images/{document_id}/"
     )
-    if "Contents" in document_images:
-        for image in document_images["Contents"]:
-            s3.delete_object(Bucket=bucketName, Key=image["Key"])
+    for image in document_images.get("Contents", []):
+        s3.delete_object(Bucket=bucket_name, Key=image["Key"])  # type: ignore
 
-    ragUtility.delete_from_collection(documentId)
+    rag_utility.delete_from_collection(document_id)
 
-    query = db.table("documents").delete().eq("id", str(documentId))
+    query = db.table("documents").delete().eq("id", str(document_id))
     response = query.execute()
     if len(response.data) == 0:
         raise HTTPException(status_code=404, detail="Document not found")
@@ -180,16 +182,16 @@ def deleteDocumentById(
     return DocumentBase.model_validate(response.data[0])
 
 
-def getDocumentFileURL(
-    documentId: UUID,
+def get_document_file_url(
+    document_id: UUID,
     s3: S3Client,
 ):
-    bucketName = os.getenv("SUPABASE_S3_BUCKET_NAME")
-    key = f"documents/{documentId}"
+    bucket_name = os.getenv("SUPABASE_S3_BUCKET_NAME", "")
+    key = f"documents/{document_id}"
     url = s3.generate_presigned_url(
         ClientMethod="get_object",
         Params={
-            "Bucket": bucketName,
+            "Bucket": bucket_name,
             "Key": key,
         },
         ExpiresIn=3600,

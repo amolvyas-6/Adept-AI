@@ -13,5 +13,11 @@ class UserProfile(BaseModel):
 
 
 class UpdateProfileBody(BaseModel):
-    fullName: str | None = None
-    deptId: UUID | None = None
+    full_name: str | None = None
+    dept_id: UUID | None = None
+
+
+class CreateProfileBody(BaseModel):
+    fullName: str
+    dept_id: UUID
+    university_id: UUID

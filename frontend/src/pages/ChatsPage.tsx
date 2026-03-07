@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router";
 import { Document, Page, pdfjs } from "react-pdf";
 import {
@@ -37,9 +37,9 @@ import {
   type Document as DocumentType,
   type Chat,
   type ChatMessage,
-  type LibraryItem,
   type SourceMetadata,
 } from "@/lib/api";
+import { useAppData } from "@/contexts/app-data-context";
 import { toast } from "sonner";
 import {
   Conversation,
@@ -80,8 +80,8 @@ export function ChatsPage() {
   const [currentDocIndex, setCurrentDocIndex] = useState(0);
 
   // Document management state
-  const [libraryItems, setLibraryItems] = useState<LibraryItem[]>([]);
-  const [libraryLoading, setLibraryLoading] = useState(false);
+  const { library: contextLibrary, libraryLoading: contextLibraryLoading } =
+    useAppData();
   const [addingDocId, setAddingDocId] = useState<string | null>(null);
   const [removingDocId, setRemovingDocId] = useState<string | null>(null);
   const [addDocDialogOpen, setAddDocDialogOpen] = useState(false);
@@ -130,12 +130,7 @@ export function ChatsPage() {
         api.getDocument(docId)
       );
       const docs = await Promise.all(docPromises);
-      // Backend returns { document: {...}, url: "..." } — flatten into a single object
-      const flatDocs = docs.map((d: any) => ({
-        ...d.document,
-        url: d.url,
-      }));
-      setDocuments(flatDocs);
+      setDocuments(docs);
 
       // Process messages: merge metadata-role messages into preceding assistant messages
       const rawMessages = (chatData.messages || []) as Array<{
@@ -169,19 +164,10 @@ export function ChatsPage() {
     }
   };
 
-  // Fetch library items for the "Add Document" dialog
-  const fetchLibrary = useCallback(async () => {
-    setLibraryLoading(true);
-    try {
-      const data = await api.getLibrary();
-      setLibraryItems(data);
-    } catch (error) {
-      console.error("Failed to fetch library:", error);
-      toast.error("Failed to load library");
-    } finally {
-      setLibraryLoading(false);
-    }
-  }, []);
+  // Filter library items to exclude documents already in the chat
+  const availableLibraryItems = contextLibrary.filter(
+    (item) => !chat?.document_ids.includes(item.document_id)
+  );
 
   const handleAddDocument = async (documentId: string) => {
     if (!chat) return;
@@ -242,10 +228,7 @@ export function ChatsPage() {
     setNumPages(0);
   };
 
-  // Filter library items to exclude documents already in the chat
-  const availableLibraryItems = libraryItems.filter(
-    (item) => !chat?.document_ids.includes(item.document_id)
-  );
+  // Filter library items to exclude documents already in the chat (duplicate removed)
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
@@ -508,10 +491,7 @@ export function ChatsPage() {
                 {/* Add Document Button */}
                 <Dialog
                   open={addDocDialogOpen}
-                  onOpenChange={(open) => {
-                    setAddDocDialogOpen(open);
-                    if (open) fetchLibrary();
-                  }}
+                  onOpenChange={setAddDocDialogOpen}
                 >
                   <TooltipProvider>
                     <Tooltip>
@@ -543,7 +523,7 @@ export function ChatsPage() {
                       </DialogDescription>
                     </DialogHeader>
 
-                    {libraryLoading ? (
+                    {contextLibraryLoading ? (
                       <div className="flex items-center justify-center py-8">
                         <Loader2 className="size-6 text-indigo-500 animate-spin" />
                       </div>
@@ -551,7 +531,7 @@ export function ChatsPage() {
                       <div className="flex flex-col items-center justify-center py-8 text-center">
                         <BookOpen className="size-10 text-muted-foreground/50 mb-3" />
                         <p className="text-sm text-muted-foreground">
-                          {libraryItems.length === 0
+                          {contextLibrary.length === 0
                             ? "Your library is empty. Save documents first."
                             : "All library documents are already in this chat."}
                         </p>
@@ -561,7 +541,7 @@ export function ChatsPage() {
                         <div className="space-y-2 pr-3">
                           {availableLibraryItems.map((item) => (
                             <button
-                              key={item.id}
+                              key={item.document_id}
                               onClick={() =>
                                 handleAddDocument(item.document_id)
                               }

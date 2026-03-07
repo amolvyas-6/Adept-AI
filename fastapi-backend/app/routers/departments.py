@@ -1,8 +1,8 @@
 from typing import Annotated
 from uuid import UUID
 
-from app.dependencies.authDependency import get_current_user
-from app.dependencies.supabaseClient import get_supabase_client
+from app.dependencies.auth_dependency import get_current_user
+from app.dependencies.supabase_client import get_supabase_client
 from app.schemas.core import ApiResponse, BaseUser
 from app.schemas.departments import (
     CreateDepartmentBody,
@@ -10,11 +10,11 @@ from app.schemas.departments import (
     UpdateDepartmentBody,
 )
 from app.services.departments import (
-    createNewDepartment,
-    deleteDepartmentById,
-    getAllDepartments,
-    getDepartmentById,
-    updateDepartmentById,
+    create_new_department,
+    delete_department_by_id,
+    get_all_departments,
+    get_department_by_id,
+    update_department_by_id,
 )
 from fastapi import APIRouter, Depends
 from supabase import Client
@@ -25,11 +25,11 @@ router = APIRouter(
 )
 
 
-@router.get("/")
-def listDepartments(
-    universityId: UUID, db: Annotated[Client, Depends(get_supabase_client)]
+@router.get("")
+def list_departments(
+    university_id: UUID, db: Annotated[Client, Depends(get_supabase_client)]
 ) -> ApiResponse[list[Department]]:
-    departments = getAllDepartments(universityId, db)
+    departments = get_all_departments(university_id, db)
     return ApiResponse(
         success=True,
         data=departments,
@@ -38,10 +38,10 @@ def listDepartments(
 
 
 @router.get("/{dept_id}")
-def getDepartment(
+def get_department(
     dept_id: UUID, db: Annotated[Client, Depends(get_supabase_client)]
 ) -> ApiResponse[Department]:
-    department = getDepartmentById(dept_id, db)
+    department = get_department_by_id(dept_id, db)
     return ApiResponse(
         success=True,
         data=department,
@@ -49,44 +49,44 @@ def getDepartment(
     )
 
 
-@router.post("/")
-def createDepartment(
-    deptData: CreateDepartmentBody,
+@router.post("")
+def create_department(
+    dept_data: CreateDepartmentBody,
     db: Annotated[Client, Depends(get_supabase_client)],
     _: Annotated[BaseUser, Depends(get_current_user)],
 ) -> ApiResponse[Department]:
-    newDepartment = createNewDepartment(deptData, db)
+    new_department = create_new_department(dept_data, db)
     return ApiResponse(
         success=True,
-        data=newDepartment,
+        data=new_department,
         message="Department created successfully",
     )
 
 
 @router.patch("/{dept_id}")
-def updateDepartment(
+def update_department(
     dept_id: UUID,
-    deptData: UpdateDepartmentBody,
+    dept_data: UpdateDepartmentBody,
     db: Annotated[Client, Depends(get_supabase_client)],
     _: Annotated[BaseUser, Depends(get_current_user)],
 ) -> ApiResponse[Department]:
-    updatedDepartment = updateDepartmentById(dept_id, deptData, db)
+    updated_department = update_department_by_id(dept_id, dept_data, db)
     return ApiResponse(
         success=True,
-        data=updatedDepartment,
+        data=updated_department,
         message="Department updated successfully",
     )
 
 
 @router.delete("/{dept_id}")
-def deleteDepartment(
+def delete_department(
     dept_id: UUID,
     db: Annotated[Client, Depends(get_supabase_client)],
     _: Annotated[BaseUser, Depends(get_current_user)],
 ) -> ApiResponse[Department]:
-    deletedDepartment = deleteDepartmentById(dept_id, db)
+    deleted_department = delete_department_by_id(dept_id, db)
     return ApiResponse(
         success=True,
-        data=deletedDepartment,
+        data=deleted_department,
         message="Department deleted successfully",
     )

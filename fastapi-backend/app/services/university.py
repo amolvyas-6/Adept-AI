@@ -9,21 +9,21 @@ from fastapi import HTTPException
 from supabase import Client
 
 
-def getAllUniversities(db: Client) -> list[University]:
+def get_all_universities(db: Client) -> list[University]:
     query = db.table("universities").select("*")
     response = query.execute()
     return [University.model_validate(university) for university in response.data]
 
 
-def getUniversityById(universityId: UUID, db: Client) -> University:
-    query = db.table("universities").select("*").eq("id", str(universityId))
+def get_university_by_id(university_id: UUID, db: Client) -> University:
+    query = db.table("universities").select("*").eq("id", str(university_id))
     response = query.execute()
     if len(response.data) == 0:
         raise HTTPException(status_code=404, detail="University not found")
     return University.model_validate(response.data[0])
 
 
-def createNewUniversity(university: CreateUniversityBody, db: Client) -> University:
+def create_new_university(university: CreateUniversityBody, db: Client) -> University:
     query = db.table("universities").insert(
         {
             "name": university.name,
@@ -35,8 +35,8 @@ def createNewUniversity(university: CreateUniversityBody, db: Client) -> Univers
     return University.model_validate(response.data[0])
 
 
-def updateUniversityById(
-    universityId: UUID, university: UpdateUniversityBody, db: Client
+def update_university_by_id(
+    university_id: UUID, university: UpdateUniversityBody, db: Client
 ) -> University:
     update_data = {}
     if university.name is not None:
@@ -45,15 +45,15 @@ def updateUniversityById(
     if len(update_data) == 0:
         raise HTTPException(status_code=400, detail="No fields to update provided")
 
-    query = db.table("universities").update(update_data).eq("id", str(universityId))
+    query = db.table("universities").update(update_data).eq("id", str(university_id))
     response = query.execute()
     if len(response.data) == 0:
         raise HTTPException(status_code=500, detail="Failed to update university")
     return University.model_validate(response.data[0])
 
 
-def deleteUniversityById(universityId: UUID, db: Client) -> University:
-    query = db.table("universities").delete().eq("id", str(universityId))
+def delete_university_by_id(university_id: UUID, db: Client) -> University:
+    query = db.table("universities").delete().eq("id", str(university_id))
     response = query.execute()
     if len(response.data) == 0:
         raise HTTPException(status_code=404, detail="University not found")

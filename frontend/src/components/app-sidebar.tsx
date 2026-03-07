@@ -11,7 +11,8 @@ import {
   Trash2,
   User,
 } from "lucide-react";
-import { api, type ChatListItem } from "@/lib/api";
+import { useAuth } from "@/contexts/auth-context";
+import { useAppData } from "@/contexts/app-data-context";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -57,39 +58,17 @@ const navItems = [
   },
 ];
 
-interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
-  user: { email?: string; id: string } | null;
-  profile: { full_name?: string } | null;
-}
-
-export function AppSidebar({ user, profile, ...props }: AppSidebarProps) {
+export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const location = useLocation();
   const navigate = useNavigate();
-  const [chats, setChats] = React.useState<ChatListItem[]>([]);
-  const [chatsLoading, setChatsLoading] = React.useState(true);
-
-  React.useEffect(() => {
-    loadChats();
-  }, []);
-
-  const loadChats = async () => {
-    try {
-      const data = await api.getChats();
-      setChats(data);
-    } catch {
-      // silently fail — user may not have chats yet
-    } finally {
-      setChatsLoading(false);
-    }
-  };
+  const { user, profile, logout } = useAuth();
+  const { chats, chatsLoading, deleteChat: deleteChatFromCtx } = useAppData();
 
   const handleDeleteChat = async (chatId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      await api.deleteChat(chatId);
-      setChats((prev) => prev.filter((c) => c._id !== chatId));
+      await deleteChatFromCtx(chatId);
       toast.success("Chat deleted");
-      // If currently viewing the deleted chat, navigate away
       if (location.pathname === `/chats/${chatId}`) {
         navigate("/dashboard");
       }
@@ -99,12 +78,12 @@ export function AppSidebar({ user, profile, ...props }: AppSidebarProps) {
   };
 
   const handleLogout = async () => {
-    const { error } = await api.logout();
-    if (error) {
-      toast.error("Failed to log out");
-    } else {
+    try {
+      await logout();
       toast.success("Logged out successfully");
-      navigate("/auth");
+      navigate("/login");
+    } catch {
+      toast.error("Failed to log out");
     }
   };
 

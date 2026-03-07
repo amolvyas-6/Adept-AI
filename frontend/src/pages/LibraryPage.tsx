@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import { useOutletContext } from "react-router";
+import { useState } from "react";
 import {
   FileText,
   Trash2,
@@ -14,49 +13,23 @@ import {
 import { Link, useNavigate } from "react-router";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { api, type LibraryItem } from "@/lib/api";
+import { useAppData } from "@/contexts/app-data-context";
+import { api } from "@/lib/api";
 import { toast } from "sonner";
-import type { User } from "@supabase/supabase-js";
-
-interface LayoutContext {
-  user: User | null;
-  profile: { full_name?: string; dept_id?: string } | null;
-}
 
 type ViewMode = "grid" | "list";
 
 export function LibraryPage() {
-  useOutletContext<LayoutContext>();
   const navigate = useNavigate();
-  const [library, setLibrary] = useState<LibraryItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { library, initialLoading, removeFromLibrary } = useAppData();
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [creatingChatId, setCreatingChatId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("list");
 
-  useEffect(() => {
-    fetchLibrary();
-  }, []);
-
-  const fetchLibrary = async () => {
-    try {
-      const data = await api.getLibrary();
-      setLibrary(data);
-    } catch (error) {
-      console.error("Failed to fetch library:", error);
-      toast.error("Failed to load library");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleRemove = async (documentId: string) => {
     setRemovingId(documentId);
     try {
-      await api.removeFromLibrary(documentId);
-      setLibrary((prev) =>
-        prev.filter((item) => item.document_id !== documentId)
-      );
+      await removeFromLibrary(documentId);
       toast.success("Document removed from library");
     } catch (error: any) {
       toast.error(error.message || "Failed to remove document");
@@ -85,7 +58,7 @@ export function LibraryPage() {
     });
   };
 
-  if (loading) {
+  if (initialLoading) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
         <Loader2 className="size-8 text-indigo-500 animate-spin" />
@@ -176,7 +149,7 @@ export function LibraryPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {library.map((item) => (
             <Card
-              key={item.id}
+              key={item.document_id}
               className="border-border/50 bg-card/60 backdrop-blur-sm hover:bg-card hover:border-border transition-all group"
             >
               <CardContent className="p-4">
@@ -228,7 +201,7 @@ export function LibraryPage() {
         <div className="space-y-3">
           {library.map((item) => (
             <Card
-              key={item.id}
+              key={item.document_id}
               className="border-border/50 bg-card/60 backdrop-blur-sm hover:bg-card hover:border-border transition-all group"
             >
               <CardContent className="p-4">

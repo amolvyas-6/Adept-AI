@@ -1,14 +1,14 @@
 from typing import Annotated
 from uuid import UUID
 
-from app.dependencies.authDependency import get_current_user
-from app.dependencies.supabaseClient import get_supabase_client
+from app.dependencies.auth_dependency import get_current_user
+from app.dependencies.supabase_client import get_supabase_client
 from app.schemas.core import ApiResponse, BaseUser
 from app.schemas.library import Library, LibraryItem
 from app.services.library import (
-    addDocumentToLibrary,
-    deleteDocumentFromLibrary,
-    getLibraryByUserId,
+    add_documents_to_library,
+    delete_document_from_library,
+    get_library_by_user_id,
 )
 from fastapi import APIRouter, Depends
 from supabase import Client
@@ -19,36 +19,36 @@ router = APIRouter(
 )
 
 
-@router.get("/")
-def getLibrary(
+@router.get("")
+def get_library(
     db: Annotated[Client, Depends(get_supabase_client)],
-    loggedInUser: Annotated[BaseUser, Depends(get_current_user)],
+    current_user: Annotated[BaseUser, Depends(get_current_user)],
 ) -> ApiResponse[list[Library]]:
-    library = getLibraryByUserId(loggedInUser, db)
+    library = get_library_by_user_id(current_user, db)
     return ApiResponse(
         success=True, data=library, message="Library fetched successfully"
     )
 
 
-@router.post("/{documentId}")
-def addToLibrary(
-    documentId: UUID,
+@router.post("/{document_id}")
+def add_to_library(
+    document_id: UUID,
     db: Annotated[Client, Depends(get_supabase_client)],
-    loggedInUser: Annotated[BaseUser, Depends(get_current_user)],
+    current_user: Annotated[BaseUser, Depends(get_current_user)],
 ) -> ApiResponse[LibraryItem]:
-    document = addDocumentToLibrary(loggedInUser, documentId, db)
+    document = add_documents_to_library(current_user, document_id, db)
     return ApiResponse(
         success=True, data=document, message="Document added to library successfully"
     )
 
 
-@router.delete("/{documentId}")
-def deleteFromLibrary(
-    documentId: UUID,
+@router.delete("/{document_id}")
+def delete_from_library(
+    document_id: UUID,
     db: Annotated[Client, Depends(get_supabase_client)],
-    loggedInUser: Annotated[BaseUser, Depends(get_current_user)],
+    current_user: Annotated[BaseUser, Depends(get_current_user)],
 ) -> ApiResponse[LibraryItem]:
-    document = deleteDocumentFromLibrary(loggedInUser, documentId, db)
+    document = delete_document_from_library(current_user, document_id, db)
     return ApiResponse(
         success=True,
         data=document,

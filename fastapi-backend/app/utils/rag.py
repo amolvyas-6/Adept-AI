@@ -3,13 +3,14 @@ import uuid
 from pathlib import Path
 
 import pymupdf
-from app.dependencies.s3Client import get_s3_client
+from app.dependencies.s3_client import get_s3_client
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_groq import ChatGroq
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_qdrant import QdrantVectorStore
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from mypy_boto3_s3 import S3Client
+from pydantic import SecretStr
 from qdrant_client import QdrantClient
 from qdrant_client.models import (
     Distance,
@@ -55,7 +56,7 @@ class RAGUtility:
         SUMMARY_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
         self.summary_model = ChatGroq(
             model=SUMMARY_MODEL,
-            api_key=os.getenv("GROQ_API_KEY"),
+            api_key=SecretStr(os.getenv("GROQ_API_KEY", "")),
         )
 
         self.vector_store = QdrantVectorStore(
@@ -139,7 +140,7 @@ class RAGUtility:
         doc_texts = []
         images = []
         for page in file:
-            page_text: str = page.get_text()
+            page_text: str = page.get_text()  # type: ignore
             page_images: list = page.get_images(full=True)
 
             if len(page_text) > 100:
@@ -159,7 +160,7 @@ class RAGUtility:
                         key = f"images/{str(docId)}/{image_name.split('-')[-1]}"
                         self.s3_client.upload_file(
                             Filename=str(image_path),
-                            Bucket=os.getenv("SUPABASE_S3_BUCKET_NAME"),
+                            Bucket=os.getenv("SUPABASE_S3_BUCKET_NAME", ""),
                             Key=key,
                             ExtraArgs={"ContentType": f"image/{image_ext}"},
                         )

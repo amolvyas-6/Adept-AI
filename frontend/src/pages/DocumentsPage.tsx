@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import { useOutletContext } from "react-router";
+import { useState } from "react";
 import {
   FileText,
   Grid3X3,
@@ -31,79 +30,35 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { api, type Document } from "@/lib/api";
+import { useAppData } from "@/contexts/app-data-context";
 import { toast } from "sonner";
-import type { User as SupabaseUser } from "@supabase/supabase-js";
-
-interface LayoutContext {
-  user: SupabaseUser | null;
-  profile: {
-    full_name?: string;
-    dept_id?: string;
-    university_id?: string;
-  } | null;
-}
 
 type ViewMode = "grid" | "list";
 
 export function DocumentsPage() {
-  const { profile } = useOutletContext<LayoutContext>();
-  const [documents, setDocuments] = useState<Document[]>([]);
-  const [courses, setCourses] = useState<
-    { id: string; name: string; code: string }[]
-  >([]);
-  const [libraryDocIds, setLibraryDocIds] = useState<Set<string>>(new Set());
-  const [loading, setLoading] = useState(true);
+  const {
+    documents,
+    courses,
+    libraryDocIds,
+    initialLoading,
+    refreshDocuments,
+    addToLibrary,
+  } = useAppData();
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCourse, setSelectedCourse] = useState<string>("all");
   const [addingToLibrary, setAddingToLibrary] = useState<string | null>(null);
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      // Wait for profile to be loaded before fetching
-      if (!profile?.university_id) {
-        return;
-      }
-
-      try {
-        const universityId = profile.university_id;
-        const [docsData, coursesData, libraryData] = await Promise.all([
-          api.getDocuments({ universityId }),
-          api.getCourses(universityId),
-          api.getLibrary(),
-        ]);
-        setDocuments(docsData);
-        setCourses(coursesData);
-        setLibraryDocIds(new Set(libraryData.map((item) => item.document_id)));
-      } catch (error) {
-        console.error("Failed to fetch documents:", error);
-        toast.error("Failed to load documents");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [profile?.university_id]);
-
-  const refreshDocuments = async () => {
-    try {
-      const universityId = profile?.university_id;
-      const docsData = await api.getDocuments({ universityId });
-      setDocuments(docsData);
-      toast.success("Document uploaded successfully");
-    } catch (error) {
-      console.error("Failed to refresh documents:", error);
-    }
+  const handleRefreshDocuments = async () => {
+    await refreshDocuments();
+    toast.success("Document uploaded successfully");
   };
 
   const handleAddToLibrary = async (documentId: string) => {
     setAddingToLibrary(documentId);
     try {
-      await api.addToLibrary(documentId);
-      setLibraryDocIds((prev) => new Set(prev).add(documentId));
+      await addToLibrary(documentId);
       toast.success("Document added to library");
     } catch (error: any) {
       toast.error(error.message || "Failed to add to library");
@@ -129,7 +84,7 @@ export function DocumentsPage() {
     });
   };
 
-  if (loading) {
+  if (initialLoading) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
         <Loader2 className="size-8 text-indigo-500 animate-spin" />
@@ -280,9 +235,9 @@ export function DocumentsPage() {
                   <CardTitle className="text-base line-clamp-2 mt-2">
                     {doc.title}
                   </CardTitle>
-                  {doc.courses && (
+                  {(doc.course_code || doc.course_name) && (
                     <CardDescription>
-                      {doc.courses.code} - {doc.courses.name}
+                      {doc.course_code} - {doc.course_name}
                     </CardDescription>
                   )}
                 </CardHeader>
@@ -290,7 +245,7 @@ export function DocumentsPage() {
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <User className="size-3" />
-                      {doc.profiles?.full_name || "Unknown"}
+                      {doc.uploaded_by || "Unknown"}
                     </span>
                     <span className="flex items-center gap-1">
                       <Calendar className="size-3" />
@@ -335,14 +290,14 @@ export function DocumentsPage() {
                       <div className="min-w-0 flex-1">
                         <p className="font-medium truncate">{doc.title}</p>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-                          {doc.courses && (
+                          {(doc.course_code || doc.course_name) && (
                             <span>
-                              {doc.courses.code} - {doc.courses.name}
+                              {doc.course_code} - {doc.course_name}
                             </span>
                           )}
                           <span className="flex items-center gap-1">
                             <User className="size-3" />
-                            {doc.profiles?.full_name || "Unknown"}
+                            {doc.uploaded_by || "Unknown"}
                           </span>
                           <span className="flex items-center gap-1">
                             <Calendar className="size-3" />
@@ -386,12 +341,11 @@ export function DocumentsPage() {
         Showing {filteredDocuments.length} of {documents.length} documents
       </p>
 
-      {/* Upload Document Dialog */}
       <AddDocumentDialog
         open={isUploadDialogOpen}
         onOpenChange={setIsUploadDialogOpen}
         courses={courses}
-        onSuccess={refreshDocuments}
+        onSuccess={handleRefreshDocuments}
       />
     </div>
   );

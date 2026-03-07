@@ -34,7 +34,7 @@ export const HomePage = () => {
               variant="secondary"
               className="rounded-full font-medium"
             >
-              <Link to="/auth">Sign In</Link>
+              <Link to="/login">Sign In</Link>
             </Button>
           </div>
         </header>
@@ -65,10 +65,7 @@ export const HomePage = () => {
                 size="lg"
                 className="rounded-full px-8 h-14 text-base bg-indigo-600 hover:bg-indigo-500 text-white border-0 shadow-lg shadow-indigo-500/20"
               >
-                <Link
-                  to="/auth?mode=signup"
-                  className="group flex items-center gap-2"
-                >
+                <Link to="/signup" className="group flex items-center gap-2">
                   Get Started
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
@@ -79,7 +76,7 @@ export const HomePage = () => {
                 size="lg"
                 className="rounded-full px-8 h-14 text-base border-border bg-background/50 backdrop-blur-sm"
               >
-                <Link to="/auth">Log In</Link>
+                <Link to="/login">Log In</Link>
               </Button>
             </div>
           </div>

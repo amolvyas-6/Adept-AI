@@ -1,17 +1,17 @@
 from typing import Annotated
 from uuid import UUID
 
-from app.dependencies.aiDependency import getRAG
-from app.dependencies.authDependency import get_current_user
-from app.dependencies.s3Client import get_s3_client
-from app.dependencies.supabaseClient import get_supabase_client
+from app.dependencies.ai_dependency import getRAG
+from app.dependencies.auth_dependency import get_current_user
+from app.dependencies.s3_client import get_s3_client
+from app.dependencies.supabase_client import get_supabase_client
 from app.schemas.core import ApiResponse, BaseUser
 from app.schemas.documents import Document, DocumentBase, DocumentWithURL
 from app.services.documents import (
-    deleteDocumentById,
-    getAllDocuments,
-    getDocumentById,
-    uploadNewDocument,
+    delete_document_by_id,
+    get_all_documents,
+    get_document_by_id,
+    upload_new_document,
 )
 from app.utils.rag import RAGUtility
 from fastapi import APIRouter, Depends, File, Form, UploadFile
@@ -23,49 +23,47 @@ router = APIRouter(
 )
 
 
-@router.get("/")
-def listDocuments(
+@router.get("")
+def list_documents(
     db: Annotated[Client, Depends(get_supabase_client)],
-    courseId: UUID | None = None,
+    course_id: UUID | None = None,
     search: str | None = None,
-    universityId: UUID | None = None,
+    university_id: UUID | None = None,
 ) -> ApiResponse[list[Document]]:
-    documents = getAllDocuments(courseId, search, universityId, db)
+    documents = get_all_documents(course_id, search, university_id, db)
     return ApiResponse(
         success=True, data=documents, message="Documents retrieved successfully"
     )
 
 
-@router.get("/{documentId}")
-def getDocument(
-    documentId: UUID,
+@router.get("/{document_id}")
+def get_document(
+    document_id: UUID,
     db: Annotated[Client, Depends(get_supabase_client)],
     s3: Annotated[S3Client, Depends(get_s3_client)],
 ) -> ApiResponse[DocumentWithURL]:
-    document = getDocumentById(documentId, db, s3)
+    document = get_document_by_id(document_id, db, s3)
 
     return ApiResponse(
         success=True, data=document, message="Document retrieved successfully"
     )
 
 
-@router.post("/")
-async def createDocument(
+@router.post("")
+async def create_document(
     current_user: Annotated[BaseUser, Depends(get_current_user)],
-    ragUtility: Annotated[RAGUtility, Depends(getRAG)],
+    rag_utility: Annotated[RAGUtility, Depends(getRAG)],
     db: Annotated[Client, Depends(get_supabase_client)],
     s3: Annotated[S3Client, Depends(get_s3_client)],
     document_data: Annotated[DocumentBase, Form()],
     document: Annotated[UploadFile, File(...)],
 ) -> ApiResponse[DocumentBase]:
 
-    new_document = uploadNewDocument(
-        document_data.title,
-        document_data.unit,
-        document_data.courseId,
+    new_document = upload_new_document(
+        document_data,
         document,
         current_user,
-        ragUtility,
+        rag_utility,
         db,
         s3,
     )
@@ -76,15 +74,15 @@ async def createDocument(
     )
 
 
-@router.delete("/{documentId}")
-def deleteDocument(
-    documentId: UUID,
-    ragUtility: Annotated[RAGUtility, Depends(getRAG)],
+@router.delete("/{document_id}")
+def delete_document(
+    document_id: UUID,
+    rag_utility: Annotated[RAGUtility, Depends(getRAG)],
     db: Annotated[Client, Depends(get_supabase_client)],
     s3: Annotated[S3Client, Depends(get_s3_client)],
 ) -> ApiResponse[DocumentBase]:
 
-    document = deleteDocumentById(documentId, ragUtility, db, s3)
+    document = delete_document_by_id(document_id, rag_utility, db, s3)
     return ApiResponse(
         success=True,
         data=document,
