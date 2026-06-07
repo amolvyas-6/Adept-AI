@@ -1,5 +1,4 @@
 from typing import Annotated
-from uuid import UUID
 
 from app.dependencies.auth_dependency import get_current_user
 from app.dependencies.mongo_client import get_chat_collection
